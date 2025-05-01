@@ -45,12 +45,15 @@ function checkNumber() {
     const match = text.match(/\d+/);
     if (match) {
         const number = parseInt(match[0], 10);
-        if (number > userDefinedNumber && !audioPlayed) {
+        if (number > userDefinedNumber && number <= 100 && !audioPlayed) {
             console.log("SLTool: INIATING DOOM MODE", number);
             playAudio();
             audioPlayed = true;
         } else if (number <= userDefinedNumber) {
             console.log("SLTool: EVERYTHING IS FINE", number);
+            setTimeout(checkNumber, 5000);
+        } else if (number > 100) {
+            console.log("SLTool: Number is greater than 100. (Preventative Measure)", number);
             setTimeout(checkNumber, 5000);
         }
     } else {
