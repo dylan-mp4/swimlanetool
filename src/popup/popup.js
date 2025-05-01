@@ -4,14 +4,15 @@ const intervalInput = document.getElementById('interval-input');
 const intervalButton = document.getElementById('set-interval');
 const doomModeCheckbox = document.getElementById('doom-mode-checkbox');
 const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
+const slaCheckerCheckbox = document.getElementById('sla-checker-checkbox');
 
-// Load the saved values from storage when the popup opens
-document.addEventListener('DOMContentLoaded', () => {
-    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh'], (data) => {
-        if (data.matchingNumber) {
+// Function to load and propagate values into the popup fields
+function loadPopupValues() {
+    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled'], (data) => {
+        if (data.matchingNumber !== undefined) {
             numberInput.value = data.matchingNumber;
         }
-        if (data.refreshInterval) {
+        if (data.refreshInterval !== undefined) {
             intervalInput.value = data.refreshInterval;
         }
         if (data.doomMode !== undefined) {
@@ -20,6 +21,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.autoRefresh !== undefined) {
             autoRefreshCheckbox.checked = data.autoRefresh;
         }
+        if (data.slaCheckerEnabled !== undefined) {
+            slaCheckerCheckbox.checked = data.slaCheckerEnabled;
+        }
+    });
+}
+
+// Load values when the popup is opened
+document.addEventListener('DOMContentLoaded', loadPopupValues);
+
+// Save the SLA Checker state to storage and notify the content script
+slaCheckerCheckbox.addEventListener('change', () => {
+    const slaCheckerEnabled = slaCheckerCheckbox.checked;
+    chrome.storage.sync.set({ slaCheckerEnabled }, () => {
+        console.log('SLTool: SLA Checker state saved:', slaCheckerEnabled);
+    });
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'updateSlaChecker', enabled: slaCheckerEnabled });
     });
 });
 

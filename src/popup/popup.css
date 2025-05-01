@@ -1,6 +1,6 @@
 body {
     font-family: Arial, sans-serif;
-    width: 200px;
+    width: 300px;
     padding: 10px;
 }
 
@@ -25,11 +25,12 @@ input[type="number"] {
 button {
     width: 100%;
     padding: 8px;
-    background-color: #c20d0d;
+    background-color: #137df7a2;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    margin-top: 10px;
 }
 
 button:hover {

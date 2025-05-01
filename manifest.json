@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Swimlane Tool",
-  "version": "1.0",
+  "version": "1.0.1",
   "description": "Swimlane Tool",
   "permissions": [
     "storage",
@@ -14,7 +14,11 @@
   "content_scripts": [
     {
       "matches": ["https://sec-ops.cybanetix.com/*"],
-      "js": ["src/content.js"]
+      "js": [
+        "src/doom.js",
+        "src/autorefresh.js",
+        "src/SLAChecker.js"
+      ]
     }
   ],
   "action": {
