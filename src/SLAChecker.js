@@ -172,42 +172,42 @@ function updateRowColors(rowIndex) {
         console.log(`Processing "Assessment" case for row ${rowIndex}`);
         const slaAssessmentEndXPathForRow = getColumnXPath("SLA Assessment end timer", rowIndex); // Replace with actual header name
         console.log(`Generated XPath for SLA Assessment End: ${slaAssessmentEndXPathForRow}`);
-    
+
         if (!slaAssessmentEndXPathForRow) {
             console.warn(`XPath for SLA Assessment End not found for row ${rowIndex}`);
             return true;
         }
-    
+
         const slaAssessmentEndResult = document.evaluate(slaAssessmentEndXPathForRow, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
         const slaAssessmentEndElement = slaAssessmentEndResult.singleNodeValue;
-    
+
         if (!slaAssessmentEndElement) {
             console.warn(`No SLA Assessment End element found for row ${rowIndex}.`);
             return true;
         }
-    
+
         const slaAssessmentEndText = slaAssessmentEndElement.textContent.trim();
         console.log(`SLA Assessment End time for row ${rowIndex}: ${slaAssessmentEndText}`);
-        
+
         const [time, period] = slaAssessmentEndText.split(" ");
         if (!time || !period) {
             console.error(`Invalid SLA Assessment End time format for row ${rowIndex}: "${slaAssessmentEndText}"`);
             return true;
         }
-    
+
         const [hours, minutes] = time.split(":").map(Number);
         if (isNaN(hours) || isNaN(minutes)) {
             console.error(`Invalid time components for row ${rowIndex}: "${time}"`);
             return true;
         }
-    
+
         const slaAssessmentEndDate = new Date();
         slaAssessmentEndDate.setHours(period === "PM" ? hours + 12 : hours, minutes, 0, 0);
-    
+
         const currentTime = new Date();
         timeDifferenceInMinutes = Math.floor((currentTime - slaAssessmentEndDate) / (1000 * 60));
         console.log(`Time difference in minutes for SLA Assessment End for row ${rowIndex}: ${timeDifferenceInMinutes}`);
-        
+
         gradientColor = calculateGradientColorAssessment(timeDifferenceInMinutes);
         console.log(`Calculated gradient color for row ${rowIndex}: ${gradientColor}`);
         applyGradientColor(rowIndex, gradientColor, caseStage);
@@ -215,42 +215,102 @@ function updateRowColors(rowIndex) {
         console.log(`Processing "Awaiting Analyst" case for row ${rowIndex}`);
         const awaitingAnalystTimestampXPathForRow = getColumnXPath("Awaiting Analyst Timestamp", rowIndex); // Replace with actual header name
         console.log(`Generated XPath for Awaiting Analyst Timestamp: ${awaitingAnalystTimestampXPathForRow}`);
-    
+
         if (!awaitingAnalystTimestampXPathForRow) {
             console.warn(`XPath for Awaiting Analyst Timestamp not found for row ${rowIndex}`);
             return true;
         }
-    
+
         const awaitingAnalystTimestampResult = document.evaluate(awaitingAnalystTimestampXPathForRow, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
         const awaitingAnalystTimestampElement = awaitingAnalystTimestampResult.singleNodeValue;
-    
+
         if (!awaitingAnalystTimestampElement) {
             console.warn(`No Awaiting Analyst Timestamp element found for row ${rowIndex}.`);
             return true;
         }
-    
+
         const awaitingAnalystTimestampText = awaitingAnalystTimestampElement.textContent.trim();
         console.log(`Awaiting Analyst Timestamp for row ${rowIndex}: ${awaitingAnalystTimestampText}`);
-        
+
         const awaitingAnalystTimestampDate = new Date(awaitingAnalystTimestampText);
         if (isNaN(awaitingAnalystTimestampDate.getTime())) {
             console.error(`Invalid Awaiting Analyst Timestamp for row ${rowIndex}: "${awaitingAnalystTimestampText}"`);
             return true;
         }
-    
+
         const currentTime = new Date();
         timeDifferenceInMinutes = Math.floor((currentTime - awaitingAnalystTimestampDate) / (1000 * 60));
         console.log(`Time difference in minutes for Awaiting Analyst Timestamp for row ${rowIndex}: ${timeDifferenceInMinutes}`);
-        
+
         gradientColor = calculateGradientColorAwaitingAnalyst(timeDifferenceInMinutes);
         console.log(`Calculated gradient color for row ${rowIndex}: ${gradientColor}`);
         applyGradientColor(rowIndex, gradientColor, caseStage);
+    } else if (caseStage === "Analyst Follow Up") {
+        applySolidColor(rowIndex, "rgb(10, 205, 240, 0.33)")
+    } else if (caseStage === "Response Received") {
+        applySolidColor(rowIndex, "rgb(147, 52, 255, 0.33)")
     } else {
         console.log(`Skipping row ${rowIndex} with case stage "${caseStage}"`);
         return true; // Skip rows that are not "Assessment" or "Awaiting Analyst"
     }
 
     return true;
+}
+
+function applySolidColor(rowIndex, color) {
+    let firstColumnXPathForRow = getColumnXPath("Current Owner", rowIndex); // Replace with actual header name
+    console.log(`Generated XPath for Current Owner: ${firstColumnXPathForRow}`);
+
+    if (!firstColumnXPathForRow) {
+        console.warn(`XPath for Current Owner not found for row ${rowIndex}`);
+        return;
+    }
+
+    // Attempt to resolve the first DOM structure
+    let firstColumnResult = document.evaluate(firstColumnXPathForRow, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+    let firstColumnElement = firstColumnResult.singleNodeValue;
+
+    // Flag to track if the XPath was adjusted
+    let isXPathAdjusted = false;
+
+    // If the first attempt fails, try the alternative DOM structure
+    if (!firstColumnElement) {
+        console.warn(`No Current Owner element found for row ${rowIndex} using initial XPath.`);
+        firstColumnXPathForRow = firstColumnXPathForRow.replace("/div/span", "/div"); // Adjust XPath for alternative structure
+        console.log(`Trying alternative XPath for Current Owner: ${firstColumnXPathForRow}`);
+        firstColumnResult = document.evaluate(firstColumnXPathForRow, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+        firstColumnElement = firstColumnResult.singleNodeValue;
+        isXPathAdjusted = true; // Mark that the XPath was adjusted
+    }
+
+    // If the element is still not found, log a warning and exit
+    if (!firstColumnElement) {
+        console.warn(`No Current Owner element found for row ${rowIndex} after trying both DOM structures.`);
+        return;
+    }
+
+    // Determine which DOM structure to use based on whether the XPath was adjusted
+    if (isXPathAdjusted) {
+        // Apply solid color to the parent element if the XPath was adjusted
+        const parentElement = firstColumnElement.parentElement;
+        if (parentElement) {
+            console.log(`Applying solid color to parent element for row ${rowIndex}: ${color}`);
+            parentElement.style.setProperty("background-color", color, "important");
+            parentElement.style.backgroundImage = "none"; // Remove any background image
+        } else {
+            console.warn(`Parent element not found for row ${rowIndex}`);
+        }
+    } else {
+        // Apply solid color to the parent of the parent element if the XPath was not adjusted
+        const parentParentElement = firstColumnElement.parentElement?.parentElement;
+        if (parentParentElement) {
+            console.log(`Applying solid color to parent of parent for row ${rowIndex}: ${color}`);
+            parentParentElement.style.setProperty("background-color", color, "important");
+            parentParentElement.style.backgroundImage = "none"; // Remove any background image
+        } else {
+            console.warn(`Parent's parent element not found for row ${rowIndex}`);
+        }
+    }
 }
 
 function applyGradientColor(rowIndex, gradientColor, caseStage) {
