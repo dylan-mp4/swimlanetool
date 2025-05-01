@@ -46,7 +46,7 @@ intervalButton.addEventListener('click', () => {
     const interval = parseInt(intervalInput.value, 10);
     if (interval >= 10) {
         chrome.storage.sync.set({ refreshInterval: interval }, () => {
-            console.log('Refresh interval saved:', interval);
+            console.log('SLTool: Refresh interval saved:', interval);
         });
 
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -71,7 +71,7 @@ intervalButton.addEventListener('click', () => {
 doomModeCheckbox.addEventListener('change', () => {
     const doomModeEnabled = doomModeCheckbox.checked;
     chrome.storage.sync.set({ doomMode: doomModeEnabled }, () => {
-        console.log('Doom Mode state saved:', doomModeEnabled);
+        console.log('SLTool: Doom Mode state saved:', doomModeEnabled);
     });
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -83,7 +83,7 @@ doomModeCheckbox.addEventListener('change', () => {
 autoRefreshCheckbox.addEventListener('change', () => {
     const autoRefreshEnabled = autoRefreshCheckbox.checked;
     chrome.storage.sync.set({ autoRefresh: autoRefreshEnabled }, () => {
-        console.log('Auto-Refresh state saved:', autoRefreshEnabled);
+        console.log('SLTool: Auto-Refresh state saved:', autoRefreshEnabled);
     });
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {

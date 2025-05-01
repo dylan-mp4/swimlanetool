@@ -1,6 +1,6 @@
 const TotalCount = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-footer/div/div/text()";
 const RefreshBtn = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[1]/ngx-toolbar/header/div[2]/ngx-toolbar-content/div[2]/ngx-button[1]/button";
-
+const Search = "/html/body/div/div/div/div/div[3]/do-condition-builder";
 let audioPlayed = false;
 let userDefinedNumber = 30; // Default value
 let refreshInterval = 10; // Default refresh interval (in seconds)
@@ -13,29 +13,29 @@ let autoRefreshEnabled = true; // Default to enabled
 chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh'], (data) => {
     if (data.matchingNumber) {
         userDefinedNumber = parseInt(data.matchingNumber, 10);
-        console.log('Loaded user-defined number:', userDefinedNumber);
+        console.log('SLTool: Loaded user-defined number:', userDefinedNumber);
     }
     if (data.refreshInterval) {
         refreshInterval = parseInt(data.refreshInterval, 10);
-        console.log('Loaded refresh interval:', refreshInterval);
+        console.log('SLTool: Loaded refresh interval:', refreshInterval);
         if (autoRefreshEnabled) {
             startRefreshInterval();
         }
     }
     if (data.doomMode !== undefined) {
         doomModeEnabled = data.doomMode;
-        console.log('Loaded Doom Mode state:', doomModeEnabled);
+        console.log('SLTool: Loaded Doom Mode state:', doomModeEnabled);
     }
     if (data.autoRefresh !== undefined) {
         autoRefreshEnabled = data.autoRefresh;
-        console.log('Loaded Auto-Refresh state:', autoRefreshEnabled);
+        console.log('SLTool: Loaded Auto-Refresh state:', autoRefreshEnabled);
     }
 });
 
 function checkNumber() {
 
     if (!doomModeEnabled) {
-        console.log('Doom Mode is disabled. Skipping');
+        console.log('SLTool: Doom Mode is disabled. Skipping');
         return;
     }
 
@@ -46,15 +46,15 @@ function checkNumber() {
     if (match) {
         const number = parseInt(match[0], 10);
         if (number > userDefinedNumber && !audioPlayed) {
-            console.log("INIATING DOOM MODE", number);
+            console.log("SLTool: INIATING DOOM MODE", number);
             playAudio();
             audioPlayed = true;
         } else if (number <= userDefinedNumber) {
-            console.log("EVERYTHING IS FINE", number);
+            console.log("SLTool: EVERYTHING IS FINE", number);
             setTimeout(checkNumber, 5000);
         }
     } else {
-        console.log("No number found in the text.");
+        console.log("SLTool: No number found in the text.");
         setTimeout(checkNumber, 5000);
     }
 }
@@ -68,20 +68,35 @@ function playAudio() {
 }
 
 function triggerRefreshButton() {
+    // Check if the Search element is visible
+    const searchResult = document.evaluate(Search, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+    const searchElement = searchResult.singleNodeValue;
+
+    if (searchElement) {
+        // Check if the element is visible in the DOM
+        const isVisible = searchElement.offsetParent !== null || searchElement.getClientRects().length > 0;
+
+        if (isVisible) {
+            console.log("SLTool: Search element is visible. Skipping refresh.");
+            return;
+        }
+    } else {
+        console.error("SLTool: Search element not found.");
+    }
     const result = document.evaluate(RefreshBtn, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
     const refreshButton = result.singleNodeValue;
 
     if (refreshButton) {
         refreshButton.click();
-        console.log("Refresh button clicked.");
+        console.log("SLTool: Auto-refreshing...");
     } else {
-        console.log("Refresh button not found.");
+        console.error("SLTool: Refresh button not found.");
     }
 }
 
 function startRefreshInterval() {
     if (!autoRefreshEnabled) {
-        console.log('Auto-Refresh is disabled. Skipping refresh interval.');
+        console.log('SLTool: Auto-Refresh is disabled. Skipping refresh interval.');
         return;
     }
 
@@ -95,7 +110,7 @@ function startRefreshInterval() {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "updateInterval") {
         refreshInterval = parseInt(request.interval, 10);
-        console.log('Updated refresh interval:', refreshInterval);
+        console.log('SLTool: Updated refresh interval:', refreshInterval);
         startRefreshInterval();
         sendResponse({ status: "success" });
     }
@@ -103,14 +118,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "updateDoomMode") {
         doomModeEnabled = request.enabled;
-        console.log('Updated Doom Mode state:', doomModeEnabled);
+        console.log('SLTool: Updated Doom Mode state:', doomModeEnabled);
         sendResponse({ status: "success" });
     }
 });
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "updateAutoRefresh") {
         autoRefreshEnabled = request.enabled;
-        console.log('Updated Auto-Refresh state:', autoRefreshEnabled);
+        console.log('SLTool: Updated Auto-Refresh state:', autoRefreshEnabled);
         if (autoRefreshEnabled) {
             startRefreshInterval();
         } else if (refreshIntervalId) {

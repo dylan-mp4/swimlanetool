@@ -7,7 +7,7 @@ chrome.runtime.onInstalled.addListener(() => {
         primaryPattern: 'https://sec-ops.cybanetix.com',
         setting: 'allow'
     }, () => {
-        console.log('Autoplay permission requested.');
+        console.log('SLTool: Autoplay permission requested.');
     });
 });
 
