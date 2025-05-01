@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Swimlane Tool",
+  "version": "1.0",
+  "description": "Swimlane Tool",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "contentSettings"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://sec-ops.cybanetix.com/*"],
+      "js": ["src/content.js"]
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+        "48": "assets/icon48.png",
+        "16": "assets/icon48.png",
+        "128": "assets/icon48.png"
+    }
+  }
+}
