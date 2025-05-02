@@ -63,7 +63,7 @@ saveButton.addEventListener('click', () => {
 // Save the refresh interval to storage
 intervalButton.addEventListener('click', () => {
     const interval = parseInt(intervalInput.value, 10);
-    if (interval >= 10) {
+    if (interval >= 20) {
         chrome.storage.sync.set({ refreshInterval: interval }, () => {
             console.log('SLTool: Refresh interval saved:', interval);
         });
@@ -79,7 +79,7 @@ intervalButton.addEventListener('click', () => {
         }, 2000);
     } else {
         const intervalStatusMessage = document.getElementById('interval-status-message');
-        intervalStatusMessage.textContent = 'Interval must be at least 10 seconds.';
+        intervalStatusMessage.textContent = 'Interval must be at least 20 seconds.';
         setTimeout(() => {
             intervalStatusMessage.textContent = '';
         }, 2000);
