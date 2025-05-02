@@ -2,7 +2,7 @@ const RefreshBtn = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/d
 const Search = "/html/body/div/div/div/div/div[3]/do-condition-builder";
 const Filter = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/app-search-list-columns/div/ngx-dropdown";
 
-let refreshInterval = 10; // Default refresh interval (in seconds)
+let refreshInterval = 20; // Default refresh interval (in seconds)
 let refreshIntervalId = null;
 let autoRefreshEnabled = false; // Default to disabled
 
