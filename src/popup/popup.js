@@ -5,10 +5,11 @@ const intervalButton = document.getElementById('set-interval');
 const doomModeCheckbox = document.getElementById('doom-mode-checkbox');
 const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
 const slaCheckerCheckbox = document.getElementById('sla-checker-checkbox');
+const disableFlashingCheckbox = document.getElementById('disable-flashing-checkbox');
 
 // Function to load and propagate values into the popup fields
 function loadPopupValues() {
-    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled'], (data) => {
+    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled', 'disableFlashing'], (data) => {
         if (data.matchingNumber !== undefined) {
             numberInput.value = data.matchingNumber;
         }
@@ -23,6 +24,9 @@ function loadPopupValues() {
         }
         if (data.slaCheckerEnabled !== undefined) {
             slaCheckerCheckbox.checked = data.slaCheckerEnabled;
+        }
+        if (data.disableFlashing !== undefined) {
+            disableFlashingCheckbox.checked = data.disableFlashing;
         }
     });
 }
@@ -107,5 +111,17 @@ autoRefreshCheckbox.addEventListener('change', () => {
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         chrome.tabs.sendMessage(tabs[0].id, { action: 'updateAutoRefresh', enabled: autoRefreshEnabled });
+    });
+});
+
+// Save the flashing setting to storage
+disableFlashingCheckbox.addEventListener('change', () => {
+    const disableFlashing = disableFlashingCheckbox.checked;
+    chrome.storage.sync.set({ disableFlashing }, () => {
+        console.log('SLTool: Flashing setting saved:', disableFlashing);
+    });
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'updateFlashingSetting', disableFlashing });
     });
 });

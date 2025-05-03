@@ -213,7 +213,7 @@ function updateRowColors(rowIndex) {
         const currentTime = new Date();
         timeDifferenceInMinutes = Math.floor((currentTime - slaAssessmentEndDate) / (1000 * 60));
         gradientColor = calculateGradientColor(caseStage, timeDifferenceInMinutes);
-        applyGradientColor(rowIndex, gradientColor, caseStage);
+        applyGradientColor(rowIndex, gradientColor, caseStage, timeDifferenceInMinutes);
     } else if (caseStage === "Awaiting Analyst") {
         const awaitingAnalystTimestampXPathForRow = getColumnXPath("Awaiting Analyst Timestamp", rowIndex);
         if (!awaitingAnalystTimestampXPathForRow) return true;
@@ -230,7 +230,7 @@ function updateRowColors(rowIndex) {
         const currentTime = new Date();
         timeDifferenceInMinutes = Math.floor((currentTime - awaitingAnalystTimestampDate) / (1000 * 60));
         gradientColor = calculateGradientColor(caseStage, timeDifferenceInMinutes);
-        applyGradientColor(rowIndex, gradientColor, caseStage);
+        applyGradientColor(rowIndex, gradientColor, caseStage, timeDifferenceInMinutes);
     } else if (caseStage === "Analyst Follow Up") {
         applySolidColor(rowIndex, "rgb(10, 205, 240, 0.33)");
     } else if (caseStage === "Response Received") {
@@ -298,57 +298,48 @@ function applySolidColor(rowIndex, color) {
     }
 }
 
-function applyGradientColor(rowIndex, gradientColor, caseStage) {
-    let firstColumnXPathForRow = getColumnXPath("Current Owner", rowIndex); // Replace with actual header name
-    // console.log(`SLTool: Generated XPath for Current Owner: ${firstColumnXPathForRow}`);
+function applyGradientColor(rowIndex, gradientColor, caseStage, timeDifferenceInMinutes) {
+    let firstColumnXPathForRow = getColumnXPath("Current Owner", rowIndex);
 
-    // Adjust XPath for Awaiting Analyst case stage
     if (caseStage === "Awaiting Analyst") {
         firstColumnXPathForRow = firstColumnXPathForRow.replace("/div/span", "/div");
-        // console.log(`SLTool: Adjusted XPath for Awaiting Analyst: ${firstColumnXPathForRow}`);
     }
 
-    if (!firstColumnXPathForRow) {
-        // console.warn(`SLTool: XPath for Current Owner not found for row ${rowIndex}`);
-        return;
-    }
+    if (!firstColumnXPathForRow) return;
 
     const firstColumnResult = document.evaluate(firstColumnXPathForRow, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
     const firstColumnElement = firstColumnResult.singleNodeValue;
 
-    if (!firstColumnElement) {
-        // console.warn(`SLTool: No Current Owner element found for row ${rowIndex}.`);
-        // console.log(`SLTool: Generated XPath: ${firstColumnXPathForRow}`);
-        return;
-    }
+    if (!firstColumnElement) return;
 
     if (caseStage === "Awaiting Analyst") {
         const parentElement = firstColumnElement.parentElement;
         if (parentElement) {
-            if (gradientColor === "rgb(230, 0, 0, 0.33)") {
-                parentElement.style.setProperty("background-color", "rgb(255, 0, 0)", "important");
-                parentElement.style.backgroundImage = "none";
-                setTimeout(() => {
+            // Retrieve the disableFlashing setting
+            chrome.storage.sync.get(['disableFlashing'], (data) => {
+                const disableFlashing = data.disableFlashing || false;
+                // Apply flashing logic if timeDifferenceInMinutes is >= 12 and disableFlashing is false - from testing this is the best time to start flashing will get reports if its too late.
+                if (!disableFlashing && timeDifferenceInMinutes >= 12) {
+                    parentElement.style.setProperty("background-color", "rgb(255, 0, 0)", "important");
+                    parentElement.style.backgroundImage = "none";
+                    setTimeout(() => {
+                        parentElement.style.setProperty("background-color", gradientColor, "important");
+                    }, 500); // Flash duration (500ms)
+                } else {
+                    // Apply the gradient color normally
                     parentElement.style.setProperty("background-color", gradientColor, "important");
-                }, 500); // Flash duration (500ms)
-            } else {
-                parentElement.style.setProperty("background-color", gradientColor, "important");
-                parentElement.style.backgroundImage = "none";
-            }
-        } else {
-            // console.warn(`SLTool: Parent element not found for row ${rowIndex}`);
+                    parentElement.style.backgroundImage = "none";
+                }
+            });
         }
     } else {
         const parentParentElement = firstColumnElement.parentElement?.parentElement;
         if (parentParentElement) {
             parentParentElement.style.setProperty("background-color", gradientColor, "important");
             parentParentElement.style.backgroundImage = "none";
-        } else {
-            // console.warn(`SLTool: Parent's parent element not found for row ${rowIndex}`);
         }
     }
 }
-
 // update colors for all rows
 function updateAllRows() {
     console.log("SLTool: Updating all rows...");

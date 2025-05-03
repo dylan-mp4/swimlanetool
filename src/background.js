@@ -8,3 +8,10 @@ chrome.runtime.onInstalled.addListener(() => {
         console.log('SLTool: Extension installed and default settings applied.');
     });
 });
+chrome.runtime.onInstalled.addListener(() => {
+    chrome.storage.sync.get(['disableFlashing'], (data) => {
+        if (data.disableFlashing === undefined) {
+            chrome.storage.sync.set({ disableFlashing: false });
+        }
+    });
+});
