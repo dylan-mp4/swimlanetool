@@ -6,44 +6,6 @@ const slaAssessmentEndXPath = "/html/body/app-root/div/div/div/div/ui-view/app-s
 let slaCheckerIntervalId = null; // Interval ID for periodic updates
 let headerIndexMap = {}; // Map to store header names and their column indices
 
-function calculateGradientColor(caseStage, timeDifferenceInMinutes) {
-    let thresholds, colors;
-
-    if (caseStage === "Assessment") {
-        thresholds = [30, 50]; // Thresholds for Assessment
-        colors = [
-            { r: 0, g: 255, b: 0 }, // Green
-            { r: 240, g: 165, b: 0 }, // Orange
-            { r: 230, g: 0, b: 0 } // Red
-        ];
-    } else if (caseStage === "Awaiting Analyst") {
-        thresholds = [5, 15]; // Threshold for Awaiting Analyst
-        colors = [
-            { r: 0, g: 255, b: 0 }, // Green
-            { r: 240, g: 165, b: 0 }, // Orange
-            { r: 230, g: 0, b: 0 } // Red
-        ];
-    } else {
-        return ""; // Return empty string for unsupported case stages
-    }
-
-    if (timeDifferenceInMinutes <= thresholds[0]) {
-        const ratio = timeDifferenceInMinutes / thresholds[0];
-        const r = Math.floor(colors[0].r + (colors[1].r - colors[0].r) * ratio);
-        const g = Math.floor(colors[0].g + (colors[1].g - colors[0].g) * ratio);
-        const b = Math.floor(colors[0].b + (colors[1].b - colors[0].b) * ratio);
-        return `rgb(${r}, ${g}, ${b}, 0.33)`;
-    } else if (thresholds[1] && timeDifferenceInMinutes <= thresholds[1]) {
-        const ratio = (timeDifferenceInMinutes - thresholds[0]) / (thresholds[1] - thresholds[0]);
-        const r = Math.floor(colors[1].r + (colors[2].r - colors[1].r) * ratio);
-        const g = Math.floor(colors[1].g + (colors[2].g - colors[1].g) * ratio);
-        const b = Math.floor(colors[1].b + (colors[2].b - colors[1].b) * ratio);
-        return `rgb(${r}, ${g}, ${b}, 0.33)`;
-    } else {
-        return `rgb(${colors[colors.length - 1].r}, ${colors[colors.length - 1].g}, ${colors[colors.length - 1].b}, 0.33)`;
-    }
-}
-
 // Function to dynamically index headers
 function indexHeaders() {
     // console.log("SLTool: Indexing headers...");
@@ -361,20 +323,24 @@ function applyGradientColor(rowIndex, gradientColor, caseStage) {
     }
 
     if (caseStage === "Awaiting Analyst") {
-        // Apply gradient color to the parent element for Awaiting Analyst
         const parentElement = firstColumnElement.parentElement;
         if (parentElement) {
-            // console.log(`SLTool: Applying gradient color to parent element for row ${rowIndex}: ${gradientColor}`);
-            parentElement.style.setProperty("background-color", gradientColor, "important");
-            parentElement.style.backgroundImage = "none";
+            if (gradientColor === "rgb(230, 0, 0, 0.33)") {
+                parentElement.style.setProperty("background-color", "rgb(255, 0, 0)", "important");
+                parentElement.style.backgroundImage = "none";
+                setTimeout(() => {
+                    parentElement.style.setProperty("background-color", gradientColor, "important");
+                }, 500); // Flash duration (500ms)
+            } else {
+                parentElement.style.setProperty("background-color", gradientColor, "important");
+                parentElement.style.backgroundImage = "none";
+            }
         } else {
             // console.warn(`SLTool: Parent element not found for row ${rowIndex}`);
         }
     } else {
-        // Apply gradient color to the parent of the parent element for other case stages
         const parentParentElement = firstColumnElement.parentElement?.parentElement;
         if (parentParentElement) {
-            // console.log(`SLTool: Applying gradient color to parent of parent for row ${rowIndex}: ${gradientColor}`);
             parentParentElement.style.setProperty("background-color", gradientColor, "important");
             parentParentElement.style.backgroundImage = "none";
         } else {
