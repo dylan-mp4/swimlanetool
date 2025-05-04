@@ -7,6 +7,7 @@ const XPATHS = {
 
 let slaCheckerIntervalId = null;
 let headerIndexMap = {};
+let disableSeverityHighlighting = false;
 
 // Utility Functions
 function log(message) {
@@ -156,9 +157,21 @@ function updateAllRows() {
     log("Updating all rows...");
     let rowIndex = 1;
     while (updateRowColors(rowIndex)) {
+        if (!disableSeverityHighlighting) {
+            colorSeverityColumn(rowIndex);
+        } else {
+            // Remove severity highlight if present
+            const severityHeader = "Severity";
+            const severityXPath = getColumnXPath(severityHeader, rowIndex);
+            const severityElement = evaluateXPath(severityXPath);
+            if (severityElement) {
+                applyStyles(severityElement, { "background-color": "rgba(0,0,0,0)" });
+            }
+        }
         rowIndex++;
     }
 }
+
 
 function updateRowColors(rowIndex) {
     const caseStageXPath = getColumnXPath("Case Stage", rowIndex);
@@ -256,6 +269,7 @@ function applyGradientColor(rowIndex, gradientColor, caseStage, timeDifferenceIn
             if (!disableFlashing) {
                 // Flash red for 500ms, then revert to gradient
                 highlightColumns.forEach((headerName) => {
+                    if (headerName === "Severity") return; // Skip Severity column
                     const columnXPath = getColumnXPath(headerName, rowIndex);
                     const columnElement = evaluateXPath(columnXPath);
                     if (columnElement && document.body.contains(columnElement)) {
@@ -269,6 +283,7 @@ function applyGradientColor(rowIndex, gradientColor, caseStage, timeDifferenceIn
             } else {
                 // If flashing is disabled, just apply the gradient
                 highlightColumns.forEach((headerName) => {
+                    if (headerName === "Severity") return; // Skip Severity column
                     const columnXPath = getColumnXPath(headerName, rowIndex);
                     const columnElement = evaluateXPath(columnXPath);
                     if (columnElement && document.body.contains(columnElement)) {
@@ -297,6 +312,7 @@ function applyColorToColumns(rowIndex, color, caseStage, timeDifferenceInMinutes
             highlightColumns = [allHeaders[0]];
         }
         highlightColumns.forEach((headerName) => {
+            if (headerName === "Severity") return; // Skip Severity column
             const columnXPath = getColumnXPath(headerName, rowIndex);
             const columnElement = evaluateXPath(columnXPath);
             if (!columnElement || !document.body.contains(columnElement)) return;
@@ -305,6 +321,37 @@ function applyColorToColumns(rowIndex, color, caseStage, timeDifferenceInMinutes
     });
 }
 
+function colorSeverityColumn(rowIndex) {
+    const severityHeader = "Severity";
+    const severityXPath = getColumnXPath(severityHeader, rowIndex);
+    const severityElement = evaluateXPath(severityXPath);
+    if (!severityElement) return;
+
+    const value = severityElement.textContent.trim();
+    let color = "";
+    switch (value) {
+        case "Unknown":
+            color = "rgba(255,105,180,0.5)";
+            break;
+        case "Low":
+            color = "rgba(0,128,0,0.5)";
+            break;
+        case "Medium":
+            color = "rgba(255,165,0,0.5)";
+            break;
+        case "High":
+            color = "rgba(255,0,0,0.5)";
+            break;
+        case "Critical":
+            color = "rgba(0,0,255,0.5)";
+            break;
+        default:
+            color = "";
+    }
+    if (color) {
+        applyStyles(severityElement, { "background-color": color });
+    }
+}
 // Event Listeners
 window.addEventListener("load", () => {
     chrome.storage.sync.get(["slaCheckerEnabled"], (data) => {
@@ -318,6 +365,8 @@ window.addEventListener("load", () => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "getHeaders") {
         sendResponse({ headers: Object.keys(headerIndexMap) });
+    } else if (request.action === "updateDisableSeverity") {
+        disableSeverityHighlighting = !!request.disableSeverity;
     } else if (request.action === "updateSlaChecker") {
         if (request.enabled) {
             startSlaChecker();
@@ -374,4 +423,9 @@ function waitForCasesToLoad() {
 
 window.addEventListener("beforeunload", () => {
     stopSlaChecker(); // Stop the SLA Checker when the page is unloaded
+});
+
+// On load, initialize from storage
+chrome.storage.sync.get(['disableSeverity'], (data) => {
+    disableSeverityHighlighting = !!data.disableSeverity;
 });

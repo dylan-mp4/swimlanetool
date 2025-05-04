@@ -6,10 +6,11 @@ const doomModeCheckbox = document.getElementById('doom-mode-checkbox');
 const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
 const slaCheckerCheckbox = document.getElementById('sla-checker-checkbox');
 const disableFlashingCheckbox = document.getElementById('disable-flashing-checkbox');
+const disableSeverityCheckbox = document.getElementById('disable-severity-checkbox');
 
 // Function to load and propagate values into the popup fields
 function loadPopupValues() {
-    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled', 'disableFlashing'], (data) => {
+    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled', 'disableFlashing', 'disableSeverity'], (data) => {
         if (data.matchingNumber !== undefined) {
             numberInput.value = data.matchingNumber;
         }
@@ -27,6 +28,9 @@ function loadPopupValues() {
         }
         if (data.disableFlashing !== undefined) {
             disableFlashingCheckbox.checked = data.disableFlashing;
+        }
+        if (data.disableSeverity !== undefined) {
+            disableSeverityCheckbox.checked = data.disableSeverity;
         }
     });
 }
@@ -181,12 +185,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// checkbox.addEventListener('change', () => {
-//     // Save selected columns to storage
-//     const checked = Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
-//     chrome.storage.sync.set({ highlightColumns: checked });
-//     // Notify content script to update highlights
-//     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-//         chrome.tabs.sendMessage(tabs[0].id, { action: 'updateHighlightColumns', highlightColumns: checked });
-//     });
-// });
+// Save the disable severity setting to storage and notify content script
+disableSeverityCheckbox.addEventListener('change', () => {
+    const disableSeverity = disableSeverityCheckbox.checked;
+    chrome.storage.sync.set({ disableSeverity }, () => {
+        console.log('SLTool: Severity highlighting setting saved:', disableSeverity);
+    });
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'updateDisableSeverity', disableSeverity });
+    });
+});
