@@ -125,3 +125,68 @@ disableFlashingCheckbox.addEventListener('change', () => {
         chrome.tabs.sendMessage(tabs[0].id, { action: 'updateFlashingSetting', disableFlashing });
     });
 });
+
+function renderHighlightColumns(headers, selectedColumns) {
+    const container = document.getElementById('highlight-columns-container');
+    container.innerHTML = '';
+    headers.forEach(header => {
+        const id = `highlight-col-${header.replace(/\s+/g, '-')}`;
+        const label = document.createElement('label');
+        label.style.display = 'block';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = id;
+        checkbox.value = header;
+        checkbox.checked = selectedColumns.includes(header);
+        checkbox.addEventListener('change', () => {
+            // Save selected columns to storage
+            const checked = Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+            chrome.storage.sync.set({ highlightColumns: checked });
+            // Notify content script to update highlights
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                chrome.tabs.sendMessage(tabs[0].id, { action: 'updateHighlightColumns', highlightColumns: checked });
+            });
+        });
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(' ' + header));
+        container.appendChild(label);
+    });
+}
+
+function loadHighlightColumns() {
+    // Get headers from content script
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'getHeaders' }, (response) => {
+            const headers = response && response.headers ? response.headers : [];
+            chrome.storage.sync.get(['highlightColumns'], (data) => {
+                const selected = Array.isArray(data.highlightColumns) ? data.highlightColumns : [];
+                renderHighlightColumns(headers, selected);
+            });
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', loadHighlightColumns);
+
+document.addEventListener('DOMContentLoaded', () => {
+    const selectAllBtn = document.getElementById('select-all-columns');
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', () => {
+            const container = document.getElementById('highlight-columns-container');
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = true);
+            const checked = Array.from(checkboxes).map(cb => cb.value);
+            chrome.storage.sync.set({ highlightColumns: checked });
+        });
+    }
+});
+
+// checkbox.addEventListener('change', () => {
+//     // Save selected columns to storage
+//     const checked = Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+//     chrome.storage.sync.set({ highlightColumns: checked });
+//     // Notify content script to update highlights
+//     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+//         chrome.tabs.sendMessage(tabs[0].id, { action: 'updateHighlightColumns', highlightColumns: checked });
+//     });
+// });

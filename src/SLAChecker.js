@@ -1,74 +1,99 @@
-const timestampXPath = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[ROW_INDEX]/datatable-body-row/div[2]/datatable-body-cell[8]/div/span";
-const rowXPath = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[ROW_INDEX]/datatable-body-row";
-const firstColumnXPath = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[ROW_INDEX]/datatable-body-row/div[2]/datatable-body-cell[1]";
-const caseStageXPath = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[ROW_INDEX]/datatable-body-row/div[2]/datatable-body-cell[5]/div/span";
-const slaAssessmentEndXPath = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[ROW_INDEX]/datatable-body-row/div[2]/datatable-body-cell[9]/div/span";
-let slaCheckerIntervalId = null; // Interval ID for periodic updates
-let headerIndexMap = {}; // Map to store header names and their column indices
+// Constants
+const XPATHS = {
+    row: (rowIndex) => `/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[${rowIndex}]/datatable-body-row`,
+    column: (rowIndex, columnIndex) => `/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[${rowIndex}]/datatable-body-row/div[2]/datatable-body-cell[${columnIndex}]/div/span`,
+    header: `/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-header/div/div[2]/datatable-header-cell`
+};
 
-// Function to dynamically index headers
+let slaCheckerIntervalId = null;
+let headerIndexMap = {};
+
+// Utility Functions
+function log(message) {
+    console.log(`SLTool: ${message}`);
+}
+
+function evaluateXPath(xpath, context = document) {
+    if (!xpath) {
+        log("Invalid XPath provided to evaluateXPath.");
+        return null;
+    }
+
+    let node = document.evaluate(xpath, context, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+
+    // If the node is null, try to resolve the parent `datatable-body-cell` directly
+    if (!node) {
+        const parentXPath = xpath.replace(/\/div\/span$/, ""); // Remove `/div/span` to target the parent cell
+        node = document.evaluate(parentXPath, context, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+    }
+
+    // Ensure we return the `datatable-body-cell` element
+    if (node) {
+        return node.closest("datatable-body-cell") || node;
+    }
+
+    return null;
+}
+
+function calculateTimeElapsed(timestampText) {
+    let timestampDate;
+
+    // Handle "HH:MM AM/PM" format
+    if (/^\d{1,2}:\d{2} (AM|PM)$/.test(timestampText)) {
+        const [time, period] = timestampText.split(" ");
+        const [hours, minutes] = time.split(":").map(Number);
+        if (isNaN(hours) || isNaN(minutes)) return NaN;
+
+        timestampDate = new Date();
+        timestampDate.setHours(period === "PM" && hours !== 12 ? hours + 12 : hours, minutes, 0, 0);
+    }
+    // Handle long format (e.g., "DAY N, YYYY HH:MM AM/PM +01:00")
+    else {
+        timestampDate = new Date(timestampText);
+        if (isNaN(timestampDate.getTime())) return NaN; // Invalid date
+    }
+
+    const currentTime = new Date();
+    return Math.floor((currentTime - timestampDate) / (1000 * 60)); // Time elapsed in minutes
+}
+
+function applyStyles(element, styles) {
+    if (!element) return;
+    Object.entries(styles).forEach(([key, value]) => {
+        element.style.setProperty(key, value, "important");
+    });
+}
+
+// Header Indexing
 function indexHeaders() {
-    // console.log("SLTool: Indexing headers...");
-    headerIndexMap = {}; // Reset the map
-
-    const headerXPath = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-header/div/div[2]/datatable-header-cell";
-    const headerNodesSnapshot = document.evaluate(headerXPath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+    headerIndexMap = {};
+    const headerNodesSnapshot = document.evaluate(XPATHS.header, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 
     for (let i = 0; i < headerNodesSnapshot.snapshotLength; i++) {
         const headerElement = headerNodesSnapshot.snapshotItem(i);
         const headerText = headerElement.querySelector("span > span")?.textContent?.trim();
-
         if (headerText) {
             headerIndexMap[headerText] = i + 1; // Store the column index (1-based)
-            // console.log(`SLTool: Indexed header: "${headerText}" at column ${i + 1}`);
         }
     }
-
-    // console.log("SLTool: Header indexing complete:", headerIndexMap);
+    log("Header indexing complete.");
 }
 
-// Function to get the XPath for a specific header's column
-function getColumnXPath(headerName, rowIndex) {
+function getColumnXPath(headerName, rowIndex, targetSpan = true) {
     const columnIndex = headerIndexMap[headerName];
     if (!columnIndex) {
-        console.log(`Header "${headerName}" not found in the indexed headers. - Possible reason: The table is not loaded yet.`);
+        log(`Header "${headerName}" not found in the indexed headers.`);
         return null;
     }
-
-    return `/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[${rowIndex}]/datatable-body-row/div[2]/datatable-body-cell[${columnIndex}]/div/span`;
+    // If targetSpan is true, target the <span>, otherwise target the parent <div>
+    return targetSpan
+        ? XPATHS.column(rowIndex, columnIndex)
+        : `/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[${rowIndex}]/datatable-body-row/div[2]/datatable-body-cell[${columnIndex}]`;
 }
 
-// Initialize the SLA Checker state on page load
-window.addEventListener("load", () => {
-    chrome.storage.sync.get(["slaCheckerEnabled"], (data) => {
-        const slaCheckerEnabled = data.slaCheckerEnabled || false; // Default to false if not set
-        console.log(`SLTool: SLA Checker enabled state on load: ${slaCheckerEnabled}`);
-        if (slaCheckerEnabled) {
-            startSlaChecker();
-        } else {
-            stopSlaChecker();
-        }
-    });
-});
-
-// Listen for messages to enable or disable the SLA Checker
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log(`SLTool: Received message: ${JSON.stringify(request)}`);
-    if (request.action === "updateSlaChecker") {
-        const slaCheckerEnabled = request.enabled;
-        console.log(`SLTool: Updating SLA Checker state to: ${slaCheckerEnabled}`);
-        if (slaCheckerEnabled) {
-            startSlaChecker();
-        } else {
-            stopSlaChecker();
-        }
-        sendResponse({ status: "success" });
-    }
-});
-
-// Function to start the SLA Checker
+// SLA Checker Functions
 function startSlaChecker() {
-    indexHeaders(); // Index headers before processing rows
+    indexHeaders();
     updateAllRows();
 
     if (slaCheckerIntervalId) {
@@ -76,275 +101,275 @@ function startSlaChecker() {
     }
 
     slaCheckerIntervalId = setInterval(() => {
-        indexHeaders(); // Re-index headers on each refresh
+        if (document.readyState !== "complete") {
+            console.warn("SLTool: Document is not ready. Stopping SLA Checker.");
+            stopSlaChecker();
+            return;
+        }
+        indexHeaders();
         updateAllRows();
     }, 1000);
 
-    console.log("SLTool: SLA Checker enabled.");
+    log("SLA Checker enabled.");
 }
 
-// Function to stop the SLA Checker
 function stopSlaChecker() {
     if (slaCheckerIntervalId) {
         clearInterval(slaCheckerIntervalId);
         slaCheckerIntervalId = null;
     }
-
     disableSlaChecker();
-    console.log("SLTool: SLA Checker disabled.");
+    log("SLA Checker disabled.");
 }
 
-// Function to disable the SLA Checker and restore the row-color class
 function disableSlaChecker() {
+    // Ensure headers are indexed
+    indexHeaders();
+
+    // Get all header names (columns)
+    const allHeaders = Object.keys(headerIndexMap);
+
     let rowIndex = 1;
     while (true) {
-        let firstColumnXPathForRow = getColumnXPath("Current Owner", rowIndex);
+        // Check if the row exists by checking the first column
+        const firstColumnXPathForRow = getColumnXPath(allHeaders[0], rowIndex);
         if (!firstColumnXPathForRow) break;
 
-        let firstColumnResult = document.evaluate(firstColumnXPathForRow, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-        let firstColumnElement = firstColumnResult.singleNodeValue;
+        const firstColumnElement = evaluateXPath(firstColumnXPathForRow);
+        if (!firstColumnElement) break;
 
-        // If the first attempt fails, try the alternative DOM structure
-        if (!firstColumnElement) {
-            firstColumnXPathForRow = firstColumnXPathForRow.replace("/div/span", "/div"); // Adjust XPath for alternative structure
-            firstColumnResult = document.evaluate(firstColumnXPathForRow, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-            firstColumnElement = firstColumnResult.singleNodeValue;
-        }
-
-        // If the element is still not found, exit the loop
-        if (!firstColumnElement) {
-            break;
-        }
-
-        // Remove background color from both possible parent elements
-        const parentElement = firstColumnElement.parentElement;
-        const parentParentElement = firstColumnElement.parentElement?.parentElement;
-
-        if (parentElement) {
-            parentElement.style.removeProperty("background-color");
-            parentElement.style.removeProperty("background-image");
-        }
-
-        if (parentParentElement) {
-            parentParentElement.style.removeProperty("background-color");
-            parentParentElement.style.removeProperty("background-image");
-        }
-
-        // Restore the row-color class
-        firstColumnElement.classList.add("row-color");
+        // Remove background color from all columns in this row
+        allHeaders.forEach((headerName) => {
+            const columnXPath = getColumnXPath(headerName, rowIndex);
+            const columnElement = evaluateXPath(columnXPath);
+            if (columnElement) {
+                applyStyles(columnElement, { "background-color": "rgba(0,0,0,0)", "background-image": "" });
+            }
+        });
 
         rowIndex++;
     }
 }
 
-function calculateGradientColor(caseStage, timeDifferenceInMinutes) {
-    let thresholds, colors;
-
-    if (caseStage === "Assessment") {
-        thresholds = [30, 60]; // Thresholds for Assessment
-        colors = [
-            { r: 0, g: 255, b: 0 }, // Green
-            { r: 240, g: 165, b: 0 }, // Orange
-            { r: 230, g: 0, b: 0 } // Red
-        ];
-    } else if (caseStage === "Awaiting Analyst") {
-        thresholds = [5, 15]; // Thresholds for Awaiting Analyst
-        colors = [
-            { r: 0, g: 255, b: 0 }, // Green
-            { r: 240, g: 165, b: 0 }, // Orange
-            { r: 230, g: 0, b: 0 } // Red
-        ];
-    } else {
-        return ""; // Return empty string for unsupported case stages
-    }
-
-    if (timeDifferenceInMinutes <= thresholds[0]) {
-        const ratio = timeDifferenceInMinutes / thresholds[0];
-        const r = Math.floor(colors[0].r + (colors[1].r - colors[0].r) * ratio);
-        const g = Math.floor(colors[0].g + (colors[1].g - colors[0].g) * ratio);
-        const b = Math.floor(colors[0].b + (colors[1].b - colors[0].b) * ratio);
-        return `rgb(${r}, ${g}, ${b}, 0.33)`;
-    } else if (thresholds[1] && timeDifferenceInMinutes <= thresholds[1]) {
-        const ratio = (timeDifferenceInMinutes - thresholds[0]) / (thresholds[1] - thresholds[0]);
-        const r = Math.floor(colors[1].r + (colors[2].r - colors[1].r) * ratio);
-        const g = Math.floor(colors[1].g + (colors[2].g - colors[1].g) * ratio);
-        const b = Math.floor(colors[1].b + (colors[2].b - colors[1].b) * ratio);
-        return `rgb(${r}, ${g}, ${b}, 0.33)`;
-    } else {
-        return `rgb(${colors[colors.length - 1].r}, ${colors[colors.length - 1].g}, ${colors[colors.length - 1].b}, 0.33)`;
-    }
-}
-
-// Update the `updateRowColors` function to use the new `calculateGradientColor`
-function updateRowColors(rowIndex) {
-    const caseStageXPathForRow = getColumnXPath("Case Stage", rowIndex);
-    if (!caseStageXPathForRow) return false;
-
-    const caseStageResult = document.evaluate(caseStageXPathForRow, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-    const caseStageElement = caseStageResult.singleNodeValue;
-
-    if (!caseStageElement) {
-        return false;
-    }
-
-    const caseStage = caseStageElement.textContent.trim();
-    let timeDifferenceInMinutes = 0;
-    let gradientColor = "";
-
-    if (caseStage === "Assessment") {
-        const slaAssessmentEndXPathForRow = getColumnXPath("SLA Assessment end timer", rowIndex);
-        if (!slaAssessmentEndXPathForRow) return true;
-
-        const slaAssessmentEndResult = document.evaluate(slaAssessmentEndXPathForRow, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-        const slaAssessmentEndElement = slaAssessmentEndResult.singleNodeValue;
-
-        if (!slaAssessmentEndElement) return true;
-
-        const slaAssessmentEndText = slaAssessmentEndElement.textContent.trim();
-        const [time, period] = slaAssessmentEndText.split(" ");
-        if (!time || !period) return true;
-
-        const [hours, minutes] = time.split(":").map(Number);
-        if (isNaN(hours) || isNaN(minutes)) return true;
-
-        const slaAssessmentEndDate = new Date();
-        slaAssessmentEndDate.setHours(period === "PM" ? hours + 12 : hours, minutes, 0, 0);
-
-        const currentTime = new Date();
-        timeDifferenceInMinutes = Math.floor((currentTime - slaAssessmentEndDate) / (1000 * 60));
-        gradientColor = calculateGradientColor(caseStage, timeDifferenceInMinutes);
-        applyGradientColor(rowIndex, gradientColor, caseStage, timeDifferenceInMinutes);
-    } else if (caseStage === "Awaiting Analyst") {
-        const awaitingAnalystTimestampXPathForRow = getColumnXPath("Awaiting Analyst Timestamp", rowIndex);
-        if (!awaitingAnalystTimestampXPathForRow) return true;
-
-        const awaitingAnalystTimestampResult = document.evaluate(awaitingAnalystTimestampXPathForRow, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-        const awaitingAnalystTimestampElement = awaitingAnalystTimestampResult.singleNodeValue;
-
-        if (!awaitingAnalystTimestampElement) return true;
-
-        const awaitingAnalystTimestampText = awaitingAnalystTimestampElement.textContent.trim();
-        const awaitingAnalystTimestampDate = new Date(awaitingAnalystTimestampText);
-        if (isNaN(awaitingAnalystTimestampDate.getTime())) return true;
-
-        const currentTime = new Date();
-        timeDifferenceInMinutes = Math.floor((currentTime - awaitingAnalystTimestampDate) / (1000 * 60));
-        gradientColor = calculateGradientColor(caseStage, timeDifferenceInMinutes);
-        applyGradientColor(rowIndex, gradientColor, caseStage, timeDifferenceInMinutes);
-    } else if (caseStage === "Analyst Follow Up") {
-        applySolidColor(rowIndex, "rgb(10, 205, 240, 0.33)");
-    } else if (caseStage === "Response Received") {
-        applySolidColor(rowIndex, "rgb(147, 52, 255, 0.33)");
-    } else {
-        return true;
-    }
-
-    return true;
-}
-
-function applySolidColor(rowIndex, color) {
-    let firstColumnXPathForRow = getColumnXPath("Current Owner", rowIndex); // Replace with actual header name
-    // console.log(`SLTool: Generated XPath for Current Owner: ${firstColumnXPathForRow}`);
-
-    if (!firstColumnXPathForRow) {
-        // console.warn(`SLTool: XPath for Current Owner not found for row ${rowIndex}`);
-        return;
-    }
-
-    // Attempt to resolve the first DOM structure
-    let firstColumnResult = document.evaluate(firstColumnXPathForRow, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-    let firstColumnElement = firstColumnResult.singleNodeValue;
-
-    // Flag to track if the XPath was adjusted
-    let isXPathAdjusted = false;
-
-    // If the first attempt fails, try the alternative DOM structure
-    if (!firstColumnElement) {
-        // console.warn(`SLTool: No Current Owner element found for row ${rowIndex} using initial XPath.`);
-        firstColumnXPathForRow = firstColumnXPathForRow.replace("/div/span", "/div"); // Adjust XPath for alternative structure
-        // console.log(`SLTool: Trying alternative XPath for Current Owner: ${firstColumnXPathForRow}`);
-        firstColumnResult = document.evaluate(firstColumnXPathForRow, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-        firstColumnElement = firstColumnResult.singleNodeValue;
-        isXPathAdjusted = true; // Mark that the XPath was adjusted
-    }
-
-    // If the element is still not found, log a warning and exit
-    if (!firstColumnElement) {
-        // console.warn(`SLTool: No Current Owner element found for row ${rowIndex} after trying both DOM structures.`);
-        return;
-    }
-
-    // Determine which DOM structure to use based on whether the XPath was adjusted
-    if (isXPathAdjusted) {
-        // Apply solid color to the parent element if the XPath was adjusted
-        const parentElement = firstColumnElement.parentElement;
-        if (parentElement) {
-            // console.log(`SLTool: Applying solid color to parent element for row ${rowIndex}: ${color}`);
-            parentElement.style.setProperty("background-color", color, "important");
-            parentElement.style.backgroundImage = "none"; // Remove any background image
-        } else {
-            // console.warn(`SLTool: Parent element not found for row ${rowIndex}`);
-        }
-    } else {
-        // Apply solid color to the parent of the parent element if the XPath was not adjusted
-        const parentParentElement = firstColumnElement.parentElement?.parentElement;
-        if (parentParentElement) {
-            // console.log(`Applying solid color to parent of parent for row ${rowIndex}: ${color}`);
-            parentParentElement.style.setProperty("background-color", color, "important");
-            parentParentElement.style.backgroundImage = "none"; // Remove any background image
-        } else {
-            // console.warn(`SLTool: Parent's parent element not found for row ${rowIndex}`);
-        }
-    }
-}
-
-function applyGradientColor(rowIndex, gradientColor, caseStage, timeDifferenceInMinutes) {
-    let firstColumnXPathForRow = getColumnXPath("Current Owner", rowIndex);
-
-    if (caseStage === "Awaiting Analyst") {
-        firstColumnXPathForRow = firstColumnXPathForRow.replace("/div/span", "/div");
-    }
-
-    if (!firstColumnXPathForRow) return;
-
-    const firstColumnResult = document.evaluate(firstColumnXPathForRow, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-    const firstColumnElement = firstColumnResult.singleNodeValue;
-
-    if (!firstColumnElement) return;
-
-    if (caseStage === "Awaiting Analyst") {
-        const parentElement = firstColumnElement.parentElement;
-        if (parentElement) {
-            // Retrieve the disableFlashing setting
-            chrome.storage.sync.get(['disableFlashing'], (data) => {
-                const disableFlashing = data.disableFlashing || false;
-                // Apply flashing logic if timeDifferenceInMinutes is >= 12 and disableFlashing is false - from testing this is the best time to start flashing will get reports if its too late.
-                if (!disableFlashing && timeDifferenceInMinutes >= 12) {
-                    parentElement.style.setProperty("background-color", "rgb(255, 0, 0)", "important");
-                    parentElement.style.backgroundImage = "none";
-                    setTimeout(() => {
-                        parentElement.style.setProperty("background-color", gradientColor, "important");
-                    }, 500); // Flash duration (500ms)
-                } else {
-                    // Apply the gradient color normally
-                    parentElement.style.setProperty("background-color", gradientColor, "important");
-                    parentElement.style.backgroundImage = "none";
-                }
-            });
-        }
-    } else {
-        const parentParentElement = firstColumnElement.parentElement?.parentElement;
-        if (parentParentElement) {
-            parentParentElement.style.setProperty("background-color", gradientColor, "important");
-            parentParentElement.style.backgroundImage = "none";
-        }
-    }
-}
-// update colors for all rows
+// Row Update Functions
 function updateAllRows() {
-    console.log("SLTool: Updating all rows...");
+    log("Updating all rows...");
     let rowIndex = 1;
     while (updateRowColors(rowIndex)) {
         rowIndex++;
     }
 }
+
+function updateRowColors(rowIndex) {
+    const caseStageXPath = getColumnXPath("Case Stage", rowIndex);
+    const caseStageElement = evaluateXPath(caseStageXPath);
+    if (!caseStageElement) return false;
+
+    const caseStage = caseStageElement.textContent.trim();
+    let gradientColor = "";
+    let timeElapsedInMinutes = 0;
+
+    if (caseStage === "Assessment") {
+        timeElapsedInMinutes = calculateTimeElapsedForRow(rowIndex, "SLA Assessment end timer");
+        gradientColor = calculateGradientColor(caseStage, timeElapsedInMinutes);
+    } else if (caseStage === "Awaiting Analyst") {
+        timeElapsedInMinutes = calculateTimeElapsedForRow(rowIndex, "Awaiting Analyst Timestamp");
+        gradientColor = calculateGradientColor(caseStage, timeElapsedInMinutes);
+    } else if (caseStage === "Analyst Follow Up") {
+        gradientColor = "rgb(10, 205, 240, 0.33)";
+    } else if (caseStage === "Response Received") {
+        gradientColor = "rgb(147, 52, 255, 0.33)";
+    } else {
+        return true;
+    }
+
+    log(`Row ${rowIndex}: Case Stage: ${caseStage}, Time Elapsed: ${timeElapsedInMinutes}, Gradient: ${gradientColor}`);
+    applyGradientColor(rowIndex, gradientColor, caseStage, timeElapsedInMinutes);
+    return true;
+}
+
+function calculateTimeElapsedForRow(rowIndex, headerName) {
+    const timestampXPath = getColumnXPath(headerName, rowIndex);
+    const timestampElement = evaluateXPath(timestampXPath);
+    if (!timestampElement) return NaN;
+
+    const timestampText = timestampElement.textContent.trim();
+    return calculateTimeElapsed(timestampText);
+}
+
+function calculateGradientColor(caseStage, timeElapsedInMinutes) {
+    let thresholds, colors;
+
+    // Define thresholds and colors based on the case stage
+    if (caseStage === "Assessment") {
+        thresholds = [0, 30, 55]; // Green at 0, Orange at 30, Red at 55
+    } else if (caseStage === "Awaiting Analyst") {
+        thresholds = [0, 5, 12]; // Green at 0, Orange at 5, Red at 12
+    } else {
+        return "rgb(255, 255, 255, 0)"; // Default to transparent if caseStage is not recognized
+    }
+
+    colors = [
+        { r: 0, g: 255, b: 0 }, // Green
+        { r: 240, g: 165, b: 0 }, // Orange
+        { r: 230, g: 0, b: 0 } // Red
+    ];
+
+    // Determine the gradient color based on the time elapsed
+    if (timeElapsedInMinutes <= thresholds[0]) {
+        // Fully green
+        return `rgb(${colors[0].r}, ${colors[0].g}, ${colors[0].b}, 0.33)`;
+    } else if (timeElapsedInMinutes <= thresholds[1]) {
+        // Interpolate between green and orange
+        const ratio = (timeElapsedInMinutes - thresholds[0]) / (thresholds[1] - thresholds[0]);
+        return interpolateColor(colors[0], colors[1], ratio);
+    } else if (timeElapsedInMinutes <= thresholds[2]) {
+        // Interpolate between orange and red
+        const ratio = (timeElapsedInMinutes - thresholds[1]) / (thresholds[2] - thresholds[1]);
+        return interpolateColor(colors[1], colors[2], ratio);
+    } else {
+        // Fully red for values beyond the highest threshold
+        return `rgb(${colors[2].r}, ${colors[2].g}, ${colors[2].b}, 0.33)`;
+    }
+}
+
+
+function interpolateColor(color1, color2, ratio) {
+    const r = Math.round(color1.r + (color2.r - color1.r) * ratio);
+    const g = Math.round(color1.g + (color2.g - color1.g) * ratio);
+    const b = Math.round(color1.b + (color2.b - color1.b) * ratio);
+    return `rgb(${r}, ${g}, ${b}, 0.33)`;
+}
+
+function applyGradientColor(rowIndex, gradientColor, caseStage, timeDifferenceInMinutes) {
+    const firstColumnXPath = getColumnXPath("Current Owner", rowIndex);
+    const firstColumnElement = evaluateXPath(firstColumnXPath);
+
+    // Check for Awaiting Analyst flashing logic
+    if (caseStage === "Awaiting Analyst" && timeDifferenceInMinutes > 12) {
+        chrome.storage.sync.get(["disableFlashing", "highlightColumns"], (data) => {
+            const disableFlashing = !!data.disableFlashing;
+            const highlightColumns = Array.isArray(data.highlightColumns) ? data.highlightColumns : ["Current Owner"];
+
+            if (!disableFlashing) {
+                // Flash red for 500ms, then revert to gradient
+                highlightColumns.forEach((headerName) => {
+                    const columnXPath = getColumnXPath(headerName, rowIndex);
+                    const columnElement = evaluateXPath(columnXPath);
+                    if (columnElement && document.body.contains(columnElement)) {
+                        applyStyles(columnElement, { "background-color": "rgba(230,0,0,1)", "background-image": "none" });
+                        setTimeout(() => {
+                            applyStyles(columnElement, { "background-color": gradientColor, "background-image": "none" });
+                        }, 500);
+                    }
+                });
+                return;
+            } else {
+                // If flashing is disabled, just apply the gradient
+                highlightColumns.forEach((headerName) => {
+                    const columnXPath = getColumnXPath(headerName, rowIndex);
+                    const columnElement = evaluateXPath(columnXPath);
+                    if (columnElement && document.body.contains(columnElement)) {
+                        applyStyles(columnElement, { "background-color": gradientColor, "background-image": "none" });
+                    }
+                });
+            }
+        });
+    } else {
+        // Default behavior for other stages or if not flashing
+        if (firstColumnElement) {
+            applyStyles(firstColumnElement, { "background-color": gradientColor, "background-image": "none" });
+        }
+        applyColorToColumns(rowIndex, gradientColor, caseStage, timeDifferenceInMinutes);
+    }
+}
+
+function applyColorToColumns(rowIndex, color, caseStage, timeDifferenceInMinutes) {
+    chrome.storage.sync.get(["highlightColumns"], (data) => {
+        const highlightColumns = Array.isArray(data.highlightColumns) ? data.highlightColumns : ["Current Owner"]; // Ensure it's an array
+        highlightColumns.forEach((headerName) => {
+            const columnXPath = getColumnXPath(headerName, rowIndex);
+            const columnElement = evaluateXPath(columnXPath); // Will return the closest `datatable-body-cell`
+
+            // Validate the DOM context
+            if (!document.body.contains(columnElement)) {
+                console.warn("SLTool: DOM context invalidated. Skipping column styling.");
+                return;
+            }
+
+            if (columnElement) {
+                applyStyles(columnElement, { "background-color": color, "background-image": "none" });
+            }
+        });
+    });
+}
+// Event Listeners
+window.addEventListener("load", () => {
+    chrome.storage.sync.get(["slaCheckerEnabled"], (data) => {
+        if (data.slaCheckerEnabled) {
+            console.log("SLTool: Waiting for cases to load...");
+            waitForCasesToLoad();
+        }
+    });
+});
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "getHeaders") {
+        sendResponse({ headers: Object.keys(headerIndexMap) });
+    } else if (request.action === "updateSlaChecker") {
+        if (request.enabled) {
+            startSlaChecker();
+        } else {
+            stopSlaChecker();
+        }
+        sendResponse({ status: "success" });
+    } else if (request.action === "updateHighlightColumns") {
+        // Remove color from all columns not in highlightColumns
+        indexHeaders();
+        const allHeaders = Object.keys(headerIndexMap);
+        const highlightColumns = Array.isArray(request.highlightColumns) ? request.highlightColumns : [];
+        let rowIndex = 1;
+        while (true) {
+            const firstColumnXPathForRow = getColumnXPath(allHeaders[0], rowIndex);
+            if (!firstColumnXPathForRow) break;
+            const firstColumnElement = evaluateXPath(firstColumnXPathForRow);
+            if (!firstColumnElement) break;
+            allHeaders.forEach((headerName) => {
+                if (!highlightColumns.includes(headerName)) {
+                    const columnXPath = getColumnXPath(headerName, rowIndex);
+                    const columnElement = evaluateXPath(columnXPath);
+                    if (columnElement) {
+                        applyStyles(columnElement, { "background-color": "rgba(0,0,0,0)", "background-image": "" });
+                    }
+                }
+            });
+            rowIndex++;
+        }
+    }
+});
+
+function waitForCasesToLoad() {
+    const totalCasesXPath = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-footer/div/div/text()";
+
+    const result = document.evaluate(totalCasesXPath, document, null, XPathResult.STRING_TYPE, null);
+    const totalCasesText = result.stringValue.trim();
+
+    const match = totalCasesText.match(/\d+/);
+    if (match) {
+        const totalCases = parseInt(match[0], 10);
+        if (totalCases > 0) {
+            log("Cases loaded. Starting SLA Checker...");
+            startSlaChecker();
+        } else {
+            log("No cases found. Retrying in 1 second...");
+            setTimeout(waitForCasesToLoad, 1000);
+        }
+    } else {
+        log("Unable to retrieve total cases. Retrying in 1 second...");
+        setTimeout(waitForCasesToLoad, 1000);
+    }
+}
+
+window.addEventListener("beforeunload", () => {
+    stopSlaChecker(); // Stop the SLA Checker when the page is unloaded
+});

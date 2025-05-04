@@ -10,18 +10,24 @@
 
 <body>
     <div class="popup-container">
-        <h1>Utilities</h1>
-        <h2>SLA Checker</h2>
+        <h1>SLA Checker</h1>
         <label for="sla-checker-checkbox">
             <input type="checkbox" id="sla-checker-checkbox" />
             Enable SLA Checker
         </label>
-        <h3>Flashing Awaiting SLA</h3>
         <label for="disable-flashing-checkbox">
             <input type="checkbox" id="disable-flashing-checkbox" />
             Disable Flashing for Awaiting SLA
         </label>
-        <h2>Auto Refresh</h2>
+        <h3>Select Highlighted SLA Columns</h3>
+        <p>Defaults to Current Owner if none are selected</p>
+        <div id="highlight-columns-container">
+            <span>Loading columns...</span>
+        </div>
+        <div>
+            <button id="select-all-columns" type="button">Select All</button>
+        </div>
+        <h1>Auto Refresh</h1>
         <label for="auto-refresh-checkbox">
             <input type="checkbox" id="auto-refresh-checkbox" />
             Enable Auto Refresh
