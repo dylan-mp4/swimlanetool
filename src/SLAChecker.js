@@ -242,15 +242,17 @@ function interpolateColor(color1, color2, ratio) {
 }
 
 function applyGradientColor(rowIndex, gradientColor, caseStage, timeDifferenceInMinutes) {
-    const firstColumnXPath = getColumnXPath("Current Owner", rowIndex);
-    const firstColumnElement = evaluateXPath(firstColumnXPath);
+    // Always use the first column by index as default
+    const allHeaders = Object.keys(headerIndexMap);
+    const defaultColumn = allHeaders[0];
 
-    // Check for Awaiting Analyst flashing logic
-    if (caseStage === "Awaiting Analyst" && timeDifferenceInMinutes > 12) {
-        chrome.storage.sync.get(["disableFlashing", "highlightColumns"], (data) => {
-            const disableFlashing = !!data.disableFlashing;
-            const highlightColumns = Array.isArray(data.highlightColumns) ? data.highlightColumns : ["Current Owner"];
-
+    chrome.storage.sync.get(["disableFlashing", "highlightColumns"], (data) => {
+        const disableFlashing = !!data.disableFlashing;
+        let highlightColumns = Array.isArray(data.highlightColumns) ? data.highlightColumns : [];
+        if (!highlightColumns.length && defaultColumn) {
+            highlightColumns = [defaultColumn];
+        }
+        if (caseStage === "Awaiting Analyst" && timeDifferenceInMinutes > 12) {
             if (!disableFlashing) {
                 // Flash red for 500ms, then revert to gradient
                 highlightColumns.forEach((headerName) => {
@@ -274,35 +276,35 @@ function applyGradientColor(rowIndex, gradientColor, caseStage, timeDifferenceIn
                     }
                 });
             }
-        });
-    } else {
-        // Default behavior for other stages or if not flashing
-        if (firstColumnElement) {
-            applyStyles(firstColumnElement, { "background-color": gradientColor, "background-image": "none" });
+        } else {
+            // Default behavior for other stages or if not flashing
+            highlightColumns.forEach((headerName) => {
+                const columnXPath = getColumnXPath(headerName, rowIndex);
+                const columnElement = evaluateXPath(columnXPath);
+                if (columnElement && document.body.contains(columnElement)) {
+                    applyStyles(columnElement, { "background-color": gradientColor, "background-image": "none" });
+                }
+            });
         }
-        applyColorToColumns(rowIndex, gradientColor, caseStage, timeDifferenceInMinutes);
-    }
+    });
 }
 
 function applyColorToColumns(rowIndex, color, caseStage, timeDifferenceInMinutes) {
     chrome.storage.sync.get(["highlightColumns"], (data) => {
-        const highlightColumns = Array.isArray(data.highlightColumns) ? data.highlightColumns : ["Current Owner"]; // Ensure it's an array
+        let highlightColumns = Array.isArray(data.highlightColumns) ? data.highlightColumns : [];
+        const allHeaders = Object.keys(headerIndexMap);
+        if (!highlightColumns.length && allHeaders.length > 0) {
+            highlightColumns = [allHeaders[0]];
+        }
         highlightColumns.forEach((headerName) => {
             const columnXPath = getColumnXPath(headerName, rowIndex);
-            const columnElement = evaluateXPath(columnXPath); // Will return the closest `datatable-body-cell`
-
-            // Validate the DOM context
-            if (!document.body.contains(columnElement)) {
-                console.warn("SLTool: DOM context invalidated. Skipping column styling.");
-                return;
-            }
-
-            if (columnElement) {
-                applyStyles(columnElement, { "background-color": color, "background-image": "none" });
-            }
+            const columnElement = evaluateXPath(columnXPath);
+            if (!columnElement || !document.body.contains(columnElement)) return;
+            applyStyles(columnElement, { "background-color": color, "background-image": "none" });
         });
     });
 }
+
 // Event Listeners
 window.addEventListener("load", () => {
     chrome.storage.sync.get(["slaCheckerEnabled"], (data) => {
