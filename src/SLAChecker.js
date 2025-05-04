@@ -8,10 +8,12 @@ const XPATHS = {
 let slaCheckerIntervalId = null;
 let headerIndexMap = {};
 let disableSeverityHighlighting = false;
+var debugMode = false;
 
-// Utility Functions
 function log(message) {
-    console.log(`SLTool: ${message}`);
+    if (debugMode) {
+        console.log(`SLTool: ${message}`);
+    }
 }
 
 function evaluateXPath(xpath, context = document) {
@@ -103,7 +105,7 @@ function startSlaChecker() {
 
     slaCheckerIntervalId = setInterval(() => {
         if (document.readyState !== "complete") {
-            console.warn("SLTool: Document is not ready. Stopping SLA Checker.");
+            log("SLTool: Document is not ready. Stopping SLA Checker.");
             stopSlaChecker();
             return;
         }
@@ -333,6 +335,9 @@ function colorSeverityColumn(rowIndex) {
         case "Unknown":
             color = "rgba(255,105,180,0.5)";
             break;
+        case "Informational":
+            color = "rgba(0,255,255,0.5)";
+            break;
         case "Low":
             color = "rgba(0,128,0,0.5)";
             break;
@@ -356,7 +361,7 @@ function colorSeverityColumn(rowIndex) {
 window.addEventListener("load", () => {
     chrome.storage.sync.get(["slaCheckerEnabled"], (data) => {
         if (data.slaCheckerEnabled) {
-            console.log("SLTool: Waiting for cases to load...");
+            log("SLTool: Waiting for cases to load...");
             waitForCasesToLoad();
         }
     });
@@ -396,6 +401,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
             rowIndex++;
         }
+    } else if (request.action === "updateDebugMode") {
+        debugMode = !!request.debugMode;
     }
 });
 
@@ -428,4 +435,7 @@ window.addEventListener("beforeunload", () => {
 // On load, initialize from storage
 chrome.storage.sync.get(['disableSeverity'], (data) => {
     disableSeverityHighlighting = !!data.disableSeverity;
+});
+chrome.storage.sync.get(['debugMode'], (data) => {
+    debugMode = !!data.debugMode;
 });

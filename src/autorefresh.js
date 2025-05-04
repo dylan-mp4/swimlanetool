@@ -5,19 +5,30 @@ const Filter = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2
 let refreshInterval = 20; // Default refresh interval (in seconds)
 let refreshIntervalId = null;
 let autoRefreshEnabled = false; // Default to disabled
+var debugMode = false;
+
+function log(message) {
+    if (debugMode) {
+        console.log(`SLTool: ${message}`);
+    }
+}
 
 // Load the saved values for Auto-Refresh when the script initializes
-chrome.storage.sync.get(['refreshInterval', 'autoRefresh'], (data) => {
+chrome.storage.sync.get(['refreshInterval', 'autoRefresh', 'debugMode'], (data) => {
     if (data.refreshInterval) {
         refreshInterval = parseInt(data.refreshInterval, 10);
-        console.log('SLTool: Loaded refresh interval:', refreshInterval);
+        log('Loaded refresh interval:', refreshInterval);
     }
     if (data.autoRefresh !== undefined) {
         autoRefreshEnabled = data.autoRefresh;
-        console.log('SLTool: Loaded Auto-Refresh state:', autoRefreshEnabled);
+        log('Loaded Auto-Refresh state:', autoRefreshEnabled);
         if (autoRefreshEnabled) {
             startAutoRefresh();
         }
+    }
+    if (data.debugMode !== undefined) {
+        debugMode = !!data.debugMode;
+        log('Loaded debug mode state:', debugMode);
     }
 });
 
@@ -30,11 +41,11 @@ function triggerRefreshButton() {
         const isVisible = searchElement.offsetParent !== null || searchElement.getClientRects().length > 0;
 
         if (isVisible) {
-            console.log("SLTool: Search element is visible. Skipping refresh.");
+            log("Search element is visible. Skipping refresh.");
             return;
         }
     } else {
-        // console.log("SLTool: Search element not found.");
+        // log("SLTool: Search element not found.");
     }
 
     // Check if the Filter element has the 'open' class
@@ -42,7 +53,7 @@ function triggerRefreshButton() {
     const filterElement = filterResult.singleNodeValue;
 
     if (filterElement && filterElement.classList.contains('open')) {
-        console.log("SLTool: Filter is active (open). Skipping refresh.");
+        log("Filter is active (open). Skipping refresh.");
         return;
     }
 
@@ -51,9 +62,9 @@ function triggerRefreshButton() {
 
     if (refreshButton) {
         refreshButton.click();
-        console.log("SLTool: Auto-refreshing...");
+        log("Auto-refreshing...");
     } else {
-        console.error("SLTool: Refresh button not found.");
+        log("Error: Refresh button not found.");
     }
 }
 
@@ -64,7 +75,7 @@ function startAutoRefresh() {
     }
 
     refreshIntervalId = setInterval(triggerRefreshButton, refreshInterval * 1000);
-    console.log('SLTool: Auto-Refresh started with interval:', refreshInterval, 'seconds.');
+    log('Auto-Refresh started with interval:', refreshInterval, 'seconds.');
 }
 
 // Function to stop the Auto-Refresh
@@ -72,7 +83,7 @@ function stopAutoRefresh() {
     if (refreshIntervalId) {
         clearInterval(refreshIntervalId);
         refreshIntervalId = null;
-        console.log('SLTool: Auto-Refresh stopped.');
+        log('Auto-Refresh stopped.');
     }
 }
 
@@ -80,7 +91,7 @@ function stopAutoRefresh() {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "updateInterval") {
         refreshInterval = parseInt(request.interval, 10);
-        console.log('SLTool: Updated refresh interval:', refreshInterval);
+        log('Updated refresh interval:', refreshInterval);
         if (autoRefreshEnabled) {
             startAutoRefresh();
         }
@@ -88,12 +99,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     if (request.action === "updateAutoRefresh") {
         autoRefreshEnabled = request.enabled;
-        console.log('SLTool: Updated Auto-Refresh state:', autoRefreshEnabled);
+        log('Updated Auto-Refresh state:', autoRefreshEnabled);
         if (autoRefreshEnabled) {
             startAutoRefresh();
         } else {
             stopAutoRefresh();
         }
         sendResponse({ status: "success" });
+    }
+    if (request.action === "updateDebugMode") {
+        debugMode = !!request.debugMode;
     }
 });

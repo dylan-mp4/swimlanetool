@@ -7,10 +7,14 @@ const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
 const slaCheckerCheckbox = document.getElementById('sla-checker-checkbox');
 const disableFlashingCheckbox = document.getElementById('disable-flashing-checkbox');
 const disableSeverityCheckbox = document.getElementById('disable-severity-checkbox');
+const debugModeCheckbox = document.getElementById('debug-mode-checkbox');
 
+function log(message) {
+    console.log(`SLTool: ${message}`);
+}
 // Function to load and propagate values into the popup fields
 function loadPopupValues() {
-    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled', 'disableFlashing', 'disableSeverity'], (data) => {
+    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled', 'disableFlashing', 'disableSeverity', 'debugMode'], (data) => {
         if (data.matchingNumber !== undefined) {
             numberInput.value = data.matchingNumber;
         }
@@ -32,6 +36,9 @@ function loadPopupValues() {
         if (data.disableSeverity !== undefined) {
             disableSeverityCheckbox.checked = data.disableSeverity;
         }
+        if (data.debugMode !== undefined) {
+            debugModeCheckbox.checked = data.debugMode;
+        }
     });
 }
 
@@ -42,7 +49,7 @@ document.addEventListener('DOMContentLoaded', loadPopupValues);
 slaCheckerCheckbox.addEventListener('change', () => {
     const slaCheckerEnabled = slaCheckerCheckbox.checked;
     chrome.storage.sync.set({ slaCheckerEnabled }, () => {
-        console.log('SLTool: SLA Checker state saved:', slaCheckerEnabled);
+        log('SLA Checker state saved:', slaCheckerEnabled);
     });
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -54,7 +61,7 @@ slaCheckerCheckbox.addEventListener('change', () => {
 saveButton.addEventListener('click', () => {
     const numberToMatch = numberInput.value;
     chrome.storage.sync.set({ matchingNumber: numberToMatch }, () => {
-        console.log('Matching number saved:', numberToMatch);
+        log('Matching number saved:', numberToMatch);
     });
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -73,7 +80,7 @@ intervalButton.addEventListener('click', () => {
     const interval = parseInt(intervalInput.value, 10);
     if (interval >= 20) {
         chrome.storage.sync.set({ refreshInterval: interval }, () => {
-            console.log('SLTool: Refresh interval saved:', interval);
+            log('Refresh interval saved:', interval);
         });
 
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -98,7 +105,7 @@ intervalButton.addEventListener('click', () => {
 doomModeCheckbox.addEventListener('change', () => {
     const doomModeEnabled = doomModeCheckbox.checked;
     chrome.storage.sync.set({ doomMode: doomModeEnabled }, () => {
-        console.log('SLTool: Doom Mode state saved:', doomModeEnabled);
+        log('Doom Mode state saved:', doomModeEnabled);
     });
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -110,7 +117,7 @@ doomModeCheckbox.addEventListener('change', () => {
 autoRefreshCheckbox.addEventListener('change', () => {
     const autoRefreshEnabled = autoRefreshCheckbox.checked;
     chrome.storage.sync.set({ autoRefresh: autoRefreshEnabled }, () => {
-        console.log('SLTool: Auto-Refresh state saved:', autoRefreshEnabled);
+        log('Auto-Refresh state saved:', autoRefreshEnabled);
     });
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -122,7 +129,7 @@ autoRefreshCheckbox.addEventListener('change', () => {
 disableFlashingCheckbox.addEventListener('change', () => {
     const disableFlashing = disableFlashingCheckbox.checked;
     chrome.storage.sync.set({ disableFlashing }, () => {
-        console.log('SLTool: Flashing setting saved:', disableFlashing);
+        log('Flashing setting saved:', disableFlashing);
     });
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -189,9 +196,20 @@ document.addEventListener('DOMContentLoaded', () => {
 disableSeverityCheckbox.addEventListener('change', () => {
     const disableSeverity = disableSeverityCheckbox.checked;
     chrome.storage.sync.set({ disableSeverity }, () => {
-        console.log('SLTool: Severity highlighting setting saved:', disableSeverity);
+        log('Severity highlighting setting saved:', disableSeverity);
     });
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         chrome.tabs.sendMessage(tabs[0].id, { action: 'updateDisableSeverity', disableSeverity });
+    });
+});
+
+// Save the debug mode setting to storage and notify content script
+debugModeCheckbox.addEventListener('change', () => {
+    const debugMode = debugModeCheckbox.checked;
+    chrome.storage.sync.set({ debugMode }, () => {
+        log('SLTool: Debug mode setting saved:', debugMode);
+    });
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'updateDebugMode', debugMode });
     });
 });

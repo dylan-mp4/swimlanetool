@@ -3,22 +3,33 @@ const TotalCount = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/d
 let audioPlayed = false;
 let userDefinedNumber = 100; // Default value
 let doomModeEnabled = false; // Default to disabled
+var debugMode = false;
+
+function log(message) {
+    if (debugMode) {
+        console.log(`SLTool: ${message}`);
+    }
+}
 
 // Load the saved values for Doom Mode when the script initializes
-chrome.storage.sync.get(['matchingNumber', 'doomMode'], (data) => {
+chrome.storage.sync.get(['matchingNumber', 'doomMode', 'debugMode'], (data) => {
     if (data.matchingNumber) {
         userDefinedNumber = parseInt(data.matchingNumber, 10);
-        console.log('SLTool: Loaded user-defined number:', userDefinedNumber);
+        log('Loaded user-defined number:', userDefinedNumber);
     }
     if (data.doomMode !== undefined) {
         doomModeEnabled = data.doomMode;
-        console.log('SLTool: Loaded Doom Mode state:', doomModeEnabled);
+        log('Loaded Doom Mode state:', doomModeEnabled);
+    }
+    if (data.debugMode !== undefined) {
+        debugMode = !!data.debugMode;
+        log('Loaded debug mode state:', debugMode);
     }
 });
 
 function checkNumber() {
     if (!doomModeEnabled) {
-        console.log('SLTool: Doom Mode is disabled. Skipping');
+        log('Doom Mode is disabled. Skipping');
         return;
     }
 
@@ -29,18 +40,18 @@ function checkNumber() {
     if (match) {
         const number = parseInt(match[0], 10);
         if (number > userDefinedNumber && number <= 100 && !audioPlayed) {
-            console.log("SLTool: INIATING DOOM MODE", number);
+            log("INIATING DOOM MODE", number);
             playAudio();
             audioPlayed = true;
         } else if (number <= userDefinedNumber) {
-            console.log("SLTool: EVERYTHING IS FINE", number);
+            log("EVERYTHING IS FINE", number);
             setTimeout(checkNumber, 5000);
         } else if (number > 100) {
-            console.log("SLTool: Number is greater than 100. (Preventative Measure)", number);
+            log("Number is greater than 100. (Preventative Measure)", number);
             setTimeout(checkNumber, 5000);
         }
     } else {
-        console.log("SLTool: No number found in the text.");
+        log("No number found in the text.");
         setTimeout(checkNumber, 5000);
     }
 }
@@ -57,8 +68,11 @@ function playAudio() {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "updateDoomMode") {
         doomModeEnabled = request.enabled;
-        console.log('SLTool: Updated Doom Mode state:', doomModeEnabled);
+        log('Updated Doom Mode state:', doomModeEnabled);
         sendResponse({ status: "success" });
+    }
+    if (request.action === "updateDebugMode") {
+        debugMode = !!request.debugMode;
     }
 });
 
