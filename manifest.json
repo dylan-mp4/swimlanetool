@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Swimlane Tool",
-  "version": "1.0.3",
-  "description": "Swimlane Tool currently supporting Automatic Refresh and SLA Colouring. Doom mode is also available. Use at your own risk.",
+  "version": "1.0.4",
+  "description": "Swimlane Tool currently supporting Automatic Refresh, SLA Colouring, and UI Modifications (more coming soon) Doom mode is also available. Use at your own risk.",
   "permissions": [
     "storage",
     "activeTab",
@@ -17,7 +17,8 @@
       "js": [
         "src/doom.js",
         "src/autorefresh.js",
-        "src/SLAChecker.js"
+        "src/SLAChecker.js",
+        "src/visual_change.js"
       ]
     }
   ],

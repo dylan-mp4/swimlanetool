@@ -8,13 +8,14 @@ const slaCheckerCheckbox = document.getElementById('sla-checker-checkbox');
 const disableFlashingCheckbox = document.getElementById('disable-flashing-checkbox');
 const disableSeverityCheckbox = document.getElementById('disable-severity-checkbox');
 const debugModeCheckbox = document.getElementById('debug-mode-checkbox');
+const visualChangesCheckbox = document.getElementById('visual-changes-checkbox');
 
 function log(message) {
     console.log(`SLTool: ${message}`);
 }
 // Function to load and propagate values into the popup fields
 function loadPopupValues() {
-    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled', 'disableFlashing', 'disableSeverity', 'debugMode'], (data) => {
+    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled', 'disableFlashing', 'disableSeverity', 'debugMode', 'visualChangesEnabled'], (data) => {
         if (data.matchingNumber !== undefined) {
             numberInput.value = data.matchingNumber;
         }
@@ -38,6 +39,9 @@ function loadPopupValues() {
         }
         if (data.debugMode !== undefined) {
             debugModeCheckbox.checked = data.debugMode;
+        }
+        if (visualChangesCheckbox) {
+            visualChangesCheckbox.checked = data.visualChangesEnabled !== false; // default to true
         }
     });
 }
@@ -213,3 +217,10 @@ debugModeCheckbox.addEventListener('change', () => {
         chrome.tabs.sendMessage(tabs[0].id, { action: 'updateDebugMode', debugMode });
     });
 });
+
+// Save the setting
+if (visualChangesCheckbox) {
+    visualChangesCheckbox.addEventListener('change', () => {
+        chrome.storage.sync.set({ visualChangesEnabled: visualChangesCheckbox.checked });
+    });
+}
