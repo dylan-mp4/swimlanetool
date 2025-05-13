@@ -4,14 +4,19 @@ function getElementByXPath(xpath) {
 }
 
 let visualChangesEnabled = true;
+let commentTextWrapEnabled = true;
 
 // Listen for changes from popup/settings
-chrome.storage.sync.get(['visualChangesEnabled'], (data) => {
+chrome.storage.sync.get(['visualChangesEnabled', 'commentTextWrapEnabled'], (data) => {
     visualChangesEnabled = data.visualChangesEnabled !== false; // default to true
+    commentTextWrapEnabled = data.commentTextWrapEnabled !== false; // default to true
 });
 chrome.storage.onChanged.addListener((changes) => {
     if (changes.visualChangesEnabled) {
         visualChangesEnabled = changes.visualChangesEnabled.newValue;
+    }
+    if (changes.commentTextWrapEnabled) {
+        commentTextWrapEnabled = changes.commentTextWrapEnabled.newValue;
     }
 });
 
@@ -101,5 +106,31 @@ function periodicallyReplaceDropdown() {
     }
 }
 
+
+
+function applyTextWrapToComments() {
+    // XPath to get the total number of comments
+    const totalCommentsXPath = '/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/div/form/fieldset/div/div[3]/div/record-tabs/ngx-tabs/section/div[2]/ngx-tab[1]/div/div/div[1]/div[1]/record-section/div/div[8]/div/record-section/ngx-section/section/div/div/div/div/record-section/div/div/div[1]/div/comments-field/div/div[1]/div[1]/span/b';
+    const totalCommentsElem = getElementByXPath(totalCommentsXPath);
+    if (!totalCommentsElem) return;
+
+    const totalComments = parseInt(totalCommentsElem.textContent, 10);
+    if (isNaN(totalComments) || totalComments < 1) return;
+
+    // Loop through each comment and apply text-wrap: auto to the span
+    for (let i = 1; i <= totalComments; i++) {
+        const commentSpanXPath = `/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/div/form/fieldset/div/div[3]/div/record-tabs/ngx-tabs/section/div[2]/ngx-tab[1]/div/div/div[1]/div[1]/record-section/div/div[8]/div/record-section/ngx-section/section/div/div/div/div/record-section/div/div/div[1]/div/comments-field/div/div[1]/comments-list/div/div[${i}]/comment/div/blockquote/div/div[2]/div/span`;
+        const spanElem = getElementByXPath(commentSpanXPath);
+        if (spanElem) {
+            spanElem.style.textWrap = 'auto';
+        }
+    }
+}
+
 // Run periodically to handle dynamic DOM changes
-setInterval(periodicallyReplaceDropdown, 1000);
+setInterval(() => {
+    periodicallyReplaceDropdown();
+    if (commentTextWrapEnabled) {
+        applyTextWrapToComments();
+    }
+}, 1000);

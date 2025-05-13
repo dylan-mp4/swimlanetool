@@ -9,13 +9,14 @@ const disableFlashingCheckbox = document.getElementById('disable-flashing-checkb
 const disableSeverityCheckbox = document.getElementById('disable-severity-checkbox');
 const debugModeCheckbox = document.getElementById('debug-mode-checkbox');
 const visualChangesCheckbox = document.getElementById('visual-changes-checkbox');
+const commentTextWrapCheckbox = document.getElementById('comment-textwrap-checkbox');
 
 function log(message) {
     console.log(`SLTool: ${message}`);
 }
 // Function to load and propagate values into the popup fields
 function loadPopupValues() {
-    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled', 'disableFlashing', 'disableSeverity', 'debugMode', 'visualChangesEnabled'], (data) => {
+    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled', 'disableFlashing', 'disableSeverity', 'debugMode', 'visualChangesEnabled', 'commentTextWrapEnabled'], (data) => {
         if (data.matchingNumber !== undefined) {
             numberInput.value = data.matchingNumber;
         }
@@ -42,6 +43,9 @@ function loadPopupValues() {
         }
         if (visualChangesCheckbox) {
             visualChangesCheckbox.checked = data.visualChangesEnabled !== false; // default to true
+        }
+        if (commentTextWrapCheckbox) {
+            commentTextWrapCheckbox.checked = data.commentTextWrapEnabled !== false; // default to true
         }
     });
 }
@@ -218,9 +222,13 @@ debugModeCheckbox.addEventListener('change', () => {
     });
 });
 
-// Save the setting
 if (visualChangesCheckbox) {
     visualChangesCheckbox.addEventListener('change', () => {
         chrome.storage.sync.set({ visualChangesEnabled: visualChangesCheckbox.checked });
+    });
+}
+if (commentTextWrapCheckbox) {
+    commentTextWrapCheckbox.addEventListener('change', () => {
+        chrome.storage.sync.set({ commentTextWrapEnabled: commentTextWrapCheckbox.checked });
     });
 }
