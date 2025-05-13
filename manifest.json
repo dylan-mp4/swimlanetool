@@ -5,8 +5,7 @@
   "description": "Swimlane Tool currently supporting Automatic Refresh, SLA Colouring, and UI Modifications (more coming soon) Doom mode is also available. Use at your own risk.",
   "permissions": [
     "storage",
-    "activeTab",
-    "contentSettings"
+    "activeTab"
   ],
   "background": {
     "service_worker": "src/background.js"
