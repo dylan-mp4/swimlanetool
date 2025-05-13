@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Swimlane Tool",
   "version": "1.0.4",
-  "description": "Swimlane Tool currently supporting Automatic Refresh, SLA Colouring, and UI Modifications (more coming soon) Doom mode is also available. Use at your own risk.",
+  "description": "Swimlane Tool currently supporting Automatic Refresh, SLA Colouring, and UI Modifications, Doom mode is also available.",
   "permissions": [
     "storage",
     "activeTab"
