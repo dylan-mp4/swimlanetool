@@ -101,7 +101,7 @@ function periodicallyReplaceDropdown() {
 
     // --- Move ngx-dropdown to start of the ul element ---
     // const dropdownToMove = getElementByXPath('/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/ngx-toolbar/header/div[2]/ngx-toolbar-content/div/ngx-dropdown');
-    const dropdownToMove = getElementByXPath('/html/body/app-root/div/div/div/div/app-search/app-record/div/ngx-toolbar/header/div[2]/ngx-toolbar-content/div/span/ngx-dropdown/');
+    const dropdownToMove = getElementByXPath('/html/body/app-root/div/div/div/div/app-search/app-record/div/ngx-toolbar/header/div[2]/ngx-toolbar-content/div/ngx-dropdown/ngx-dropdown-toggle');
 
     const ul = dropdown.querySelector('ul.vertical-list');
     if (dropdownToMove && ul && dropdownToMove !== ul.firstChild) {
