@@ -1,8 +1,11 @@
 // Constants
 const XPATHS = {
-    row: (rowIndex) => `/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[${rowIndex}]/datatable-body-row`,
-    column: (rowIndex, columnIndex) => `/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[${rowIndex}]/datatable-body-row/div[2]/datatable-body-cell[${columnIndex}]/div/span`,
-    header: `/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-header/div/div[2]/datatable-header-cell`
+    // row: (rowIndex) => `/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[${rowIndex}]/datatable-body-row`,
+    row: (rowIndex) => `/html/body/app-root/div/div/div/div/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[${rowIndex}]/datatable-body-row'`,
+    // column: (rowIndex, columnIndex) => `/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[${rowIndex}]/datatable-body-row/div[2]/datatable-body-cell[${columnIndex}]/div/span`,
+    column: (rowIndex, columnIndex) => `/html/body/app-root/div/div/div/div/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[${rowIndex}]/datatable-body-row/div[2]/datatable-body-cell[${columnIndex}]/div/span`,
+    // header: `/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-header/div/div[2]/datatable-header-cell`
+    header: `/html/body/app-root/div/div/div/div/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/div/datatable-header/div/div[2]/datatable-header-cell`
 };
 
 let slaCheckerIntervalId = null;
@@ -91,7 +94,8 @@ function getColumnXPath(headerName, rowIndex, targetSpan = true) {
     // If targetSpan is true, target the <span>, otherwise target the parent <div>
     return targetSpan
         ? XPATHS.column(rowIndex, columnIndex)
-        : `/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[${rowIndex}]/datatable-body-row/div[2]/datatable-body-cell[${columnIndex}]`;
+        // : `/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[${rowIndex}]/datatable-body-row/div[2]/datatable-body-cell[${columnIndex}]`;
+        : `/html/body/app-root/div/div/div/div/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/div/datatable-body/datatable-selection/datatable-scroller/datatable-row-wrapper[${rowIndex}]/datatable-body-row/div[2]/datatable-body-cell[${columnIndex}]`;
 }
 
 // SLA Checker Functions
@@ -407,8 +411,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 function waitForCasesToLoad() {
-    const totalCasesXPath = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-footer/div/div/text()";
-
+    // const totalCasesXPath = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-footer/div/div/text()";
+    const totalCasesXPath = "/html/body/app-root/div/div/div/div/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-footer/div/div/text()";
     const result = document.evaluate(totalCasesXPath, document, null, XPathResult.STRING_TYPE, null);
     const totalCasesText = result.stringValue.trim();
 

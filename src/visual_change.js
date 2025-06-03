@@ -39,7 +39,8 @@ function periodicallyReplaceDropdown() {
     parent.style.width = '10%';
 
     // Hide the specified ngx-button
-    const buttonToHide = getElementByXPath('/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/ngx-toolbar/header/div[2]/ngx-toolbar-content/div/span/ngx-button');
+    // const buttonToHide = getElementByXPath('/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/ngx-toolbar/header/div[2]/ngx-toolbar-content/div/span/ngx-button');
+    const buttonToHide = getElementByXPath('/html/body/app-root/div/div/div/div/app-search/app-record/div/ngx-toolbar/header/div[2]/ngx-toolbar-content/div/span/ngx-button');
     if (buttonToHide) {
         buttonToHide.style.display = 'none';
     }
@@ -54,9 +55,10 @@ function periodicallyReplaceDropdown() {
     }
 
     // XPaths for original buttons
-    const saveBtnXPath = '/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/ngx-toolbar/header/div[2]/ngx-toolbar-content/div/span/ngx-dropdown/ngx-dropdown-menu/ul/li[1]/button';
-    const saveAndCloseBtnXPath = '/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/ngx-toolbar/header/div[2]/ngx-toolbar-content/div/span/ngx-dropdown/ngx-dropdown-menu/ul/li[2]/button';
-
+    // const saveBtnXPath = '/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/ngx-toolbar/header/div[2]/ngx-toolbar-content/div/span/ngx-dropdown/ngx-dropdown-menu/ul/li[1]/button';
+    const saveBtnXPath = '/html/body/app-root/div/div/div/div/app-search/app-record/div/ngx-toolbar/header/div[2]/ngx-toolbar-content/div/span/ngx-dropdown/ngx-dropdown-menu/ul/li[1]/button';
+    // const saveAndCloseBtnXPath = '/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/ngx-toolbar/header/div[2]/ngx-toolbar-content/div/span/ngx-dropdown/ngx-dropdown-menu/ul/li[2]/button';
+    const saveAndCloseBtnXPath = '/html/body/app-root/div/div/div/div/app-search/app-record/div/ngx-toolbar/header/div[2]/ngx-toolbar-content/div/span/ngx-dropdown/ngx-dropdown-menu/ul/li[2]/button';
     // Create Save button
     const saveButton = document.createElement('button');
     saveButton.textContent = 'Save';
@@ -98,7 +100,9 @@ function periodicallyReplaceDropdown() {
     dropdown.style.display = 'none';
 
     // --- Move ngx-dropdown to start of the ul element ---
-    const dropdownToMove = getElementByXPath('/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/ngx-toolbar/header/div[2]/ngx-toolbar-content/div/ngx-dropdown');
+    // const dropdownToMove = getElementByXPath('/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/ngx-toolbar/header/div[2]/ngx-toolbar-content/div/ngx-dropdown');
+    const dropdownToMove = getElementByXPath('/html/body/app-root/div/div/div/div/app-search/app-record/div/ngx-toolbar/header/div[2]/ngx-toolbar-content/div/span/ngx-dropdown/');
+
     const ul = dropdown.querySelector('ul.vertical-list');
     if (dropdownToMove && ul && dropdownToMove !== ul.firstChild) {
         ul.style.display = 'none';
@@ -110,7 +114,9 @@ function periodicallyReplaceDropdown() {
 
 function applyTextWrapToComments() {
     // XPath to get the total number of comments
-    const totalCommentsXPath = '/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/div/form/fieldset/div/div[3]/div/record-tabs/ngx-tabs/section/div[2]/ngx-tab[1]/div/div/div[1]/div[1]/record-section/div/div[8]/div/record-section/ngx-section/section/div/div/div/div/record-section/div/div/div[1]/div/comments-field/div/div[1]/div[1]/span/b';
+    // const totalCommentsXPath = '/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/div/form/fieldset/div/div[3]/div/record-tabs/ngx-tabs/section/div[2]/ngx-tab[1]/div/div/div[1]/div[1]/record-section/div/div[8]/div/record-section/ngx-section/section/div/div/div/div/record-section/div/div/div[1]/div/comments-field/div/div[1]/div[1]/span/b';
+    const totalCommentsXPath = '/html/body/app-root/div/div/div/div/app-search/app-record/div/div/form/fieldset/div/div[3]/div/record-tabs/ngx-tabs/section/div[2]/ngx-tab[1]/div/div/div[1]/div[1]/record-section/div/div[8]/div/record-section/ngx-section/section/div/div/div/div/record-section/div/div/div[1]/div/comments-field/div/div[1]/div[1]/span/b';
+
     const totalCommentsElem = getElementByXPath(totalCommentsXPath);
     if (!totalCommentsElem) return;
 
@@ -119,7 +125,9 @@ function applyTextWrapToComments() {
 
     // Loop through each comment and apply text-wrap: auto to the span
     for (let i = 1; i <= totalComments; i++) {
-        const commentSpanXPath = `/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/div/form/fieldset/div/div[3]/div/record-tabs/ngx-tabs/section/div[2]/ngx-tab[1]/div/div/div[1]/div[1]/record-section/div/div[8]/div/record-section/ngx-section/section/div/div/div/div/record-section/div/div/div[1]/div/comments-field/div/div[1]/comments-list/div/div[${i}]/comment/div/blockquote/div/div[2]/div/span`;
+        // const commentSpanXPath = `/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/div/form/fieldset/div/div[3]/div/record-tabs/ngx-tabs/section/div[2]/ngx-tab[1]/div/div/div[1]/div[1]/record-section/div/div[8]/div/record-section/ngx-section/section/div/div/div/div/record-section/div/div/div[1]/div/comments-field/div/div[1]/comments-list/div/div[${i}]/comment/div/blockquote/div/div[2]/div/span`;
+        const commentSpanXPath = `/html/body/app-root/div/div/div/div/app-search/app-record/div/div/form/fieldset/div/div[3]/div/record-tabs/ngx-tabs/section/div[2]/ngx-tab[1]/div/div/div[1]/div[1]/record-section/div/div[8]/div/record-section/ngx-section/section/div/div/div/div/record-section/div/div/div[1]/div/comments-field/div/div[1]/comments-list/div/div/comment/div/blockquote/div/div[2]/div/span`;
+
         const spanElem = getElementByXPath(commentSpanXPath);
         if (spanElem) {
             spanElem.style.textWrap = 'auto';

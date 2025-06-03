@@ -1,6 +1,7 @@
-const RefreshBtn = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[1]/ngx-toolbar/header/div[2]/ngx-toolbar-content/div[2]/ngx-button[1]/button";
+// const RefreshBtn = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[1]/ngx-toolbar/header/div[2]/ngx-toolbar-content/div[2]/ngx-button[1]/button";
+const RefreshBtn = "/html/body/app-root/div/div/div/div/app-search/div/div[1]/ngx-toolbar/header/div[2]/ngx-toolbar-content/div[2]/ngx-button[1]/button";
 const Search = "/html/body/div/div/div/div/div[3]/do-condition-builder";
-const Filter = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/app-search-list-columns/div/ngx-dropdown";
+const Filter = "/html/body/app-root/div/div/div/div/app-search/div/div[2]/div[2]/app-search-list/div[2]/app-search-list-columns/div/ngx-dropdown";
 
 let refreshInterval = 20; // Default refresh interval (in seconds)
 let refreshIntervalId = null;
