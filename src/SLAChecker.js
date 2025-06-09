@@ -189,7 +189,15 @@ function updateRowColors(rowIndex) {
     let timeElapsedInMinutes = 0;
 
     if (caseStage === "Assessment") {
-        timeElapsedInMinutes = calculateTimeElapsedForRow(rowIndex, "SLA Assessment end timer");
+        let timeElapsedInMinutes;
+        try {
+            timeElapsedInMinutes = calculateTimeElapsedForRow(rowIndex, "Assessment Timestamp");
+            if (isNaN(timeElapsedInMinutes) || timeElapsedInMinutes === null) {
+                timeElapsedInMinutes = calculateTimeElapsedForRow(rowIndex, "SLA Assessment end timer");
+            }
+        } catch (e) {
+            timeElapsedInMinutes = calculateTimeElapsedForRow(rowIndex, "SLA Assessment end timer");
+        }
         gradientColor = calculateGradientColor(caseStage, timeElapsedInMinutes);
     } else if (caseStage === "Awaiting Analyst") {
         timeElapsedInMinutes = calculateTimeElapsedForRow(rowIndex, "Awaiting Analyst Timestamp");
