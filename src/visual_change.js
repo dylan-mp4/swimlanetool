@@ -5,11 +5,13 @@ function getElementByXPath(xpath) {
 
 let visualChangesEnabled = true;
 let commentTextWrapEnabled = true;
+let searchOverlayEnabled = true;
 
 // Listen for changes from popup/settings
 chrome.storage.sync.get(['visualChangesEnabled', 'commentTextWrapEnabled'], (data) => {
     visualChangesEnabled = data.visualChangesEnabled !== false; // default to true
     commentTextWrapEnabled = data.commentTextWrapEnabled !== false; // default to true
+    searchOverlayEnabled = data.searchOverlayEnabled !== false; // default to true
 });
 chrome.storage.onChanged.addListener((changes) => {
     if (changes.visualChangesEnabled) {
@@ -17,6 +19,9 @@ chrome.storage.onChanged.addListener((changes) => {
     }
     if (changes.commentTextWrapEnabled) {
         commentTextWrapEnabled = changes.commentTextWrapEnabled.newValue;
+    }
+    if (changes.searchOverlayEnabled) {
+        searchOverlayEnabled = changes.searchOverlayEnabled.newValue;
     }
 });
 
@@ -134,11 +139,19 @@ function applyTextWrapToComments() {
         }
     }
 }
-
+function setOverlayHeight() {
+    const overlays = document.getElementsByClassName('cdk-overlay-pane');
+    for (let i = 0; i < overlays.length; i++) {
+        overlays[i].style.height = '100%';
+    }
+}
 // Run periodically to handle dynamic DOM changes
 setInterval(() => {
     periodicallyReplaceDropdown();
     if (commentTextWrapEnabled) {
         applyTextWrapToComments();
+    }
+    if (searchOverlayEnabled) {
+        setOverlayHeight();
     }
 }, 1000);

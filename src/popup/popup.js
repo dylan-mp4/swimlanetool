@@ -10,13 +10,14 @@ const disableSeverityCheckbox = document.getElementById('disable-severity-checkb
 const debugModeCheckbox = document.getElementById('debug-mode-checkbox');
 const visualChangesCheckbox = document.getElementById('visual-changes-checkbox');
 const commentTextWrapCheckbox = document.getElementById('comment-textwrap-checkbox');
+const searchOverlayCheckbox = document.getElementById('search-overlay-checkbox');
 
 function log(message) {
     console.log(`SLTool: ${message}`);
 }
 // Function to load and propagate values into the popup fields
 function loadPopupValues() {
-    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled', 'disableFlashing', 'disableSeverity', 'debugMode', 'visualChangesEnabled', 'commentTextWrapEnabled'], (data) => {
+    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled', 'disableFlashing', 'disableSeverity', 'debugMode', 'visualChangesEnabled', 'commentTextWrapEnabled', 'searchOverlayEnabled'], (data) => {
         if (data.matchingNumber !== undefined) {
             numberInput.value = data.matchingNumber;
         }
@@ -46,6 +47,9 @@ function loadPopupValues() {
         }
         if (commentTextWrapCheckbox) {
             commentTextWrapCheckbox.checked = data.commentTextWrapEnabled !== false; // default to true
+        }
+        if (searchOverlayCheckbox) {
+            searchOverlayCheckbox.checked = data.searchOverlayEnabled !== false; // default to true
         }
     });
 }
@@ -230,5 +234,10 @@ if (visualChangesCheckbox) {
 if (commentTextWrapCheckbox) {
     commentTextWrapCheckbox.addEventListener('change', () => {
         chrome.storage.sync.set({ commentTextWrapEnabled: commentTextWrapCheckbox.checked });
+    });
+}
+if (searchOverlayCheckbox) {
+    searchOverlayCheckbox.addEventListener('change', () => {
+        chrome.storage.sync.set({ searchOverlayEnabled: searchOverlayCheckbox.checked });
     });
 }
