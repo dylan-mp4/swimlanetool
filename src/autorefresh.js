@@ -37,6 +37,11 @@ function triggerRefreshButton() {
     // Check if the Search element is visible
     const searchResult = document.evaluate(Search, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
     const searchElement = searchResult.singleNodeValue;
+    const appRecordElem = document.querySelector('app-record');
+    if (appRecordElem && (appRecordElem.offsetParent !== null || appRecordElem.getClientRects().length > 0)) {
+        log("<app-record> element is visible. Skipping refresh.");
+        return;
+    }
 
     if (searchElement) {
         const isVisible = searchElement.offsetParent !== null || searchElement.getClientRects().length > 0;
