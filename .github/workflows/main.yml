@@ -40,3 +40,12 @@ jobs:
         with:
           name: SOC-browser-extension-v${{ env.EXT_VERSION }}
           path: dist/SOC-browser-extension-v${{ env.EXT_VERSION }}.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.EXT_VERSION }}
+          name: SOC-browser-extension v${{ env.EXT_VERSION }}
+          files: dist/SOC-browser-extension-v${{ env.EXT_VERSION }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
