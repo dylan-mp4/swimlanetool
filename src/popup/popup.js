@@ -11,13 +11,15 @@ const debugModeCheckbox = document.getElementById('debug-mode-checkbox');
 const visualChangesCheckbox = document.getElementById('visual-changes-checkbox');
 const commentTextWrapCheckbox = document.getElementById('comment-textwrap-checkbox');
 const searchOverlayCheckbox = document.getElementById('search-overlay-checkbox');
+const discrepancyCheckingCheckbox = document.getElementById('discrepancy-checking-checkbox');
+
 
 function log(message) {
     console.log(`SLTool: ${message}`);
 }
 // Function to load and propagate values into the popup fields
 function loadPopupValues() {
-    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled', 'disableFlashing', 'disableSeverity', 'debugMode', 'visualChangesEnabled', 'commentTextWrapEnabled', 'searchOverlayEnabled'], (data) => {
+    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled', 'disableFlashing', 'disableSeverity', 'debugMode', 'visualChangesEnabled', 'commentTextWrapEnabled', 'searchOverlayEnabled', 'discrepancyCheckingEnabled'], (data) => {
         if (data.matchingNumber !== undefined) {
             numberInput.value = data.matchingNumber;
         }
@@ -50,6 +52,9 @@ function loadPopupValues() {
         }
         if (searchOverlayCheckbox) {
             searchOverlayCheckbox.checked = data.searchOverlayEnabled !== false; // default to true
+        }
+        if (discrepancyCheckingCheckbox) {
+            discrepancyCheckingCheckbox.checked = data.discrepancyCheckingEnabled !== false; // default to true
         }
     });
 }
@@ -239,5 +244,17 @@ if (commentTextWrapCheckbox) {
 if (searchOverlayCheckbox) {
     searchOverlayCheckbox.addEventListener('change', () => {
         chrome.storage.sync.set({ searchOverlayEnabled: searchOverlayCheckbox.checked });
+    });
+}
+// Save the discrepancy checking setting to storage and notify content script
+if (discrepancyCheckingCheckbox) {
+    discrepancyCheckingCheckbox.addEventListener('change', () => {
+        const discrepancyCheckingEnabled = discrepancyCheckingCheckbox.checked;
+        chrome.storage.sync.set({ discrepancyCheckingEnabled }, () => {
+            log('Discrepancy Checking setting saved:', discrepancyCheckingEnabled);
+        });
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { action: 'updateDiscrepancyChecking', enabled: discrepancyCheckingEnabled });
+        });
     });
 }
