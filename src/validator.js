@@ -94,7 +94,7 @@ function hideSoftAlert() {
 
 function extractAutomatedBriefTitle(text) {
     // Extracts title between "An Alert of type" and "was", allowing for any whitespace or line breaks
-    const match = text.match(/An Alert of type\s*(.*?)\s*was/si);
+    const match = text.match(/An Alert of type\s*(.*?)\s*was received/si);
     return match ? match[1].trim() : null;
 }
 
