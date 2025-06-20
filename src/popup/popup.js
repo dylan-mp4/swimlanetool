@@ -12,7 +12,7 @@ const visualChangesCheckbox = document.getElementById('visual-changes-checkbox')
 const commentTextWrapCheckbox = document.getElementById('comment-textwrap-checkbox');
 const searchOverlayCheckbox = document.getElementById('search-overlay-checkbox');
 const discrepancyCheckingCheckbox = document.getElementById('discrepancy-checking-checkbox');
-
+const autoShowCaseDetailsCheckbox = document.getElementById('auto-show-case-details-checkbox');
 
 function log(message) {
     console.log(`SLTool: ${message}`);
@@ -45,16 +45,19 @@ function loadPopupValues() {
             debugModeCheckbox.checked = data.debugMode;
         }
         if (visualChangesCheckbox) {
-            visualChangesCheckbox.checked = data.visualChangesEnabled !== false; // default to true
+            visualChangesCheckbox.checked = data.visualChangesEnabled !== false;
         }
         if (commentTextWrapCheckbox) {
-            commentTextWrapCheckbox.checked = data.commentTextWrapEnabled !== false; // default to true
+            commentTextWrapCheckbox.checked = data.commentTextWrapEnabled !== false;
         }
         if (searchOverlayCheckbox) {
-            searchOverlayCheckbox.checked = data.searchOverlayEnabled !== false; // default to true
+            searchOverlayCheckbox.checked = data.searchOverlayEnabled !== false;
         }
         if (discrepancyCheckingCheckbox) {
-            discrepancyCheckingCheckbox.checked = data.discrepancyCheckingEnabled !== false; // default to true
+            discrepancyCheckingCheckbox.checked = data.discrepancyCheckingEnabled !== false;
+        }
+        if (autoShowCaseDetailsCheckbox) {
+            autoShowCaseDetailsCheckbox.checked = data.autoShowCaseDetails !== false;
         }
     });
 }
@@ -255,6 +258,17 @@ if (discrepancyCheckingCheckbox) {
         });
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             chrome.tabs.sendMessage(tabs[0].id, { action: 'updateDiscrepancyChecking', enabled: discrepancyCheckingEnabled });
+        });
+    });
+}
+if (autoShowCaseDetailsCheckbox) {
+    autoShowCaseDetailsCheckbox.addEventListener('change', () => {
+        const autoShowCaseDetails = autoShowCaseDetailsCheckbox.checked;
+        chrome.storage.sync.set({ autoShowCaseDetails }, () => {
+            log('Auto Show Case Details setting saved:', autoShowCaseDetails);
+        });
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { action: 'updateAutoShowCaseDetails', enabled: autoShowCaseDetails });
         });
     });
 }
