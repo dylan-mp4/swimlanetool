@@ -15,6 +15,7 @@ const commentTextWrapCheckbox = document.getElementById('comment-textwrap-checkb
 const searchOverlayCheckbox = document.getElementById('search-overlay-checkbox');
 const discrepancyCheckingCheckbox = document.getElementById('discrepancy-checking-checkbox');
 const autoShowCaseDetailsCheckbox = document.getElementById('auto-show-case-details-checkbox');
+const developerSettingsCheckbox = document.getElementById('developer-settings-checkbox');
 
 // --- Utility ---
 var debugLogLevel = 0;
@@ -41,7 +42,8 @@ function loadPopupValues() {
         'commentTextWrapEnabled',
         'searchOverlayEnabled',
         'discrepancyCheckingEnabled',
-        'autoShowCaseDetails'
+        'autoShowCaseDetails',
+        'developerSettingsEnabled'
     ], (data) => {
         if (data.matchingNumber !== undefined) numberInput.value = data.matchingNumber;
         if (data.refreshInterval !== undefined) intervalInput.value = data.refreshInterval;
@@ -57,6 +59,7 @@ function loadPopupValues() {
         if (searchOverlayCheckbox) searchOverlayCheckbox.checked = data.searchOverlayEnabled !== false;
         if (discrepancyCheckingCheckbox) discrepancyCheckingCheckbox.checked = data.discrepancyCheckingEnabled !== false;
         if (autoShowCaseDetailsCheckbox) autoShowCaseDetailsCheckbox.checked = data.autoShowCaseDetails !== false;
+        if (developerSettingsCheckbox) developerSettingsCheckbox.checked = data.developerSettingsEnabled === true;
     });
 }
 
@@ -254,7 +257,7 @@ if (discrepancyCheckingCheckbox) {
     discrepancyCheckingCheckbox.addEventListener('change', () => {
         const discrepancyCheckingEnabled = discrepancyCheckingCheckbox.checked;
         chrome.storage.sync.set({ discrepancyCheckingEnabled }, () => {
-            log('Discrepancy Checking setting saved:',2, discrepancyCheckingEnabled);
+            log('Discrepancy Checking setting saved:', 2, discrepancyCheckingEnabled);
         });
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             chrome.tabs.sendMessage(tabs[0].id, { action: 'updateDiscrepancyChecking', enabled: discrepancyCheckingEnabled });
@@ -265,10 +268,21 @@ if (autoShowCaseDetailsCheckbox) {
     autoShowCaseDetailsCheckbox.addEventListener('change', () => {
         const autoShowCaseDetails = autoShowCaseDetailsCheckbox.checked;
         chrome.storage.sync.set({ autoShowCaseDetails }, () => {
-            log('Auto Show Case Details setting saved:',2, autoShowCaseDetails);
+            log('Auto Show Case Details setting saved:', 2, autoShowCaseDetails);
         });
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             chrome.tabs.sendMessage(tabs[0].id, { action: 'updateAutoShowCaseDetails', enabled: autoShowCaseDetails });
+        });
+    });
+}
+if (developerSettingsCheckbox) {
+    developerSettingsCheckbox.addEventListener('change', () => {
+        const developerSettingsEnabled = developerSettingsCheckbox.checked;
+        chrome.storage.sync.set({ developerSettingsEnabled }, () => {
+            log('Developer Settings state saved:', 2, developerSettingsEnabled);
+        });
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { action: 'updateDeveloperSettings', developerSettingsEnabled });
         });
     });
 }
