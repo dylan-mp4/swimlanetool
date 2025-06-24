@@ -16,15 +16,15 @@ function log(message, level = 3, ...args) {
 chrome.storage.sync.get(['matchingNumber', 'doomMode', 'debugMode', 'debugLogLevel'], (data) => {
     if (data.matchingNumber) {
         userDefinedNumber = parseInt(data.matchingNumber, 10);
-        log('Loaded user-defined number:',3, userDefinedNumber);
+        log('Loaded user-defined number:', 3, userDefinedNumber);
     }
     if (data.doomMode !== undefined) {
         doomModeEnabled = data.doomMode;
-        log('Loaded Doom Mode state:',3, doomModeEnabled);
+        log('Loaded Doom Mode state:', 3, doomModeEnabled);
     }
     if (data.debugMode !== undefined) {
         debugMode = !!data.debugMode;
-        log('Loaded debug mode state:',3, debugMode);
+        log('Loaded debug mode state:', 3, debugMode);
     }
     if (data.debugLogLevel !== undefined) {
         debugLogLevel = parseInt(data.debugLogLevel, 10);
@@ -34,7 +34,7 @@ chrome.storage.sync.get(['matchingNumber', 'doomMode', 'debugMode', 'debugLogLev
 
 function checkNumber() {
     if (!doomModeEnabled) {
-        log('Doom Mode is disabled. Skipping',4);
+        log('Doom Mode is disabled. Skipping', 4);
         return;
     }
 
@@ -45,18 +45,18 @@ function checkNumber() {
     if (match) {
         const number = parseInt(match[0], 10);
         if (number > userDefinedNumber && number <= 100 && !audioPlayed) {
-            log("INIATING DOOM MODE",1, number);
+            log("INIATING DOOM MODE", 1, number);
             playAudio();
             audioPlayed = true;
         } else if (number <= userDefinedNumber) {
-            log("EVERYTHING IS FINE",3, number);
+            log("EVERYTHING IS FINE", 3, number);
             setTimeout(checkNumber, 5000);
         } else if (number > 100) {
-            log("Number is greater than 100. (Preventative Measure)",2, number);
+            log("Number is greater than 100. (Preventative Measure)", 2, number);
             setTimeout(checkNumber, 5000);
         }
     } else {
-        log("No number found in the text.",4);
+        log("No number found in the text.", 4);
         setTimeout(checkNumber, 5000);
     }
 }
@@ -73,7 +73,7 @@ function playAudio() {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "updateDoomMode") {
         doomModeEnabled = request.enabled;
-        log('Updated Doom Mode state:', 3,doomModeEnabled);
+        log('Updated Doom Mode state:', 3, doomModeEnabled);
         sendResponse({ status: "success" });
     }
 });

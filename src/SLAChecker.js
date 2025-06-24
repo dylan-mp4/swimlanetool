@@ -28,7 +28,7 @@ function log(message, level = 3, ...args) {
 
 function evaluateXPath(xpath, context = document) {
     if (!xpath) {
-        log("Invalid XPath provided to evaluateXPath.",1);
+        log("Invalid XPath provided to evaluateXPath.", 1);
         return null;
     }
 
@@ -89,7 +89,7 @@ function indexHeaders() {
             headerIndexMap[headerText] = i + 1; // Store the column index (1-based)
         }
     }
-    log("Header indexing complete.",4);
+    log("Header indexing complete.", 4);
 }
 
 function getColumnXPath(headerName, rowIndex, targetSpan = true) {
@@ -118,7 +118,7 @@ function startSlaChecker() {
 
     slaCheckerIntervalId = setInterval(() => {
         if (document.readyState !== "complete") {
-            log("SLTool: Document is not ready. Stopping SLA Checker.",2);
+            log("SLTool: Document is not ready. Stopping SLA Checker.", 2);
             stopSlaChecker();
             return;
         }
@@ -126,7 +126,7 @@ function startSlaChecker() {
         updateAllRows();
     }, 1000);
 
-    log("SLA Checker enabled.",3);
+    log("SLA Checker enabled.", 3);
 }
 
 function stopSlaChecker() {
@@ -135,7 +135,7 @@ function stopSlaChecker() {
         slaCheckerIntervalId = null;
     }
     disableSlaChecker();
-    log("SLA Checker disabled.",3);
+    log("SLA Checker disabled.", 3);
 }
 
 function disableSlaChecker() {
@@ -169,7 +169,7 @@ function disableSlaChecker() {
 
 // Row Update Functions
 function updateAllRows() {
-    log("Updating all rows...",3);
+    log("Updating all rows...", 3);
     let rowIndex = 1;
     while (updateRowColors(rowIndex)) {
         if (!disableSeverityHighlighting) {
@@ -219,7 +219,7 @@ function updateRowColors(rowIndex) {
         return true;
     }
 
-    log(`Row ${rowIndex}: Case Stage: ${caseStage}, Time Elapsed: ${timeElapsedInMinutes}, Gradient: ${gradientColor}`,4);
+    log(`Row ${rowIndex}: Case Stage: ${caseStage}, Time Elapsed: ${timeElapsedInMinutes}, Gradient: ${gradientColor}`, 4);
     applyGradientColor(rowIndex, gradientColor, caseStage, timeElapsedInMinutes);
     return true;
 }
@@ -382,7 +382,7 @@ function colorSeverityColumn(rowIndex) {
 window.addEventListener("load", () => {
     chrome.storage.sync.get(["slaCheckerEnabled"], (data) => {
         if (data.slaCheckerEnabled) {
-            log("SLTool: Waiting for cases to load...",3);
+            log("SLTool: Waiting for cases to load...", 3);
             waitForCasesToLoad();
         }
     });
@@ -429,7 +429,7 @@ function waitForCasesToLoad() {
     // const totalCasesXPath = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-footer/div/div/text()";
     // const totalCasesXPath = "/html/body/app-root/div/div/div/div/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-footer/div/div/text()";
     const totalCasesXPath = "/html/body/app-root/div/div/div/div/app-search/div/div[2]/div[2]/app-search-list/div/ngx-datatable/div/datatable-footer/div/div/text()";
-    
+
     const result = document.evaluate(totalCasesXPath, document, null, XPathResult.STRING_TYPE, null);
     const totalCasesText = result.stringValue.trim();
 
@@ -437,14 +437,14 @@ function waitForCasesToLoad() {
     if (match) {
         const totalCases = parseInt(match[0], 10);
         if (totalCases > 0) {
-            log("Cases loaded. Starting SLA Checker...",3);
+            log("Cases loaded. Starting SLA Checker...", 3);
             startSlaChecker();
         } else {
-            log("No cases found. Retrying in 1 second...",3);
+            log("No cases found. Retrying in 1 second...", 3);
             setTimeout(waitForCasesToLoad, 1000);
         }
     } else {
-        log("Unable to retrieve total cases. Retrying in 1 second...",3);
+        log("Unable to retrieve total cases. Retrying in 1 second...", 3);
         setTimeout(waitForCasesToLoad, 1000);
     }
 }
