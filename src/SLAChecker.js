@@ -18,16 +18,17 @@ let slaCheckerIntervalId = null;
 let headerIndexMap = {};
 let disableSeverityHighlighting = false;
 var debugMode = false;
+var debugLogLevel = 0;
 
-function log(message) {
-    if (debugMode) {
-        console.log(`SLTool: ${message}`);
+function log(message, level = 3, ...args) {
+    if (debugMode && debugLogLevel >= level) {
+        console.log(`SLTool: ${message}`, ...args);
     }
 }
 
 function evaluateXPath(xpath, context = document) {
     if (!xpath) {
-        log("Invalid XPath provided to evaluateXPath.");
+        log("Invalid XPath provided to evaluateXPath.", 1);
         return null;
     }
 
@@ -88,13 +89,13 @@ function indexHeaders() {
             headerIndexMap[headerText] = i + 1; // Store the column index (1-based)
         }
     }
-    log("Header indexing complete.");
+    log("Header indexing complete.", 4);
 }
 
 function getColumnXPath(headerName, rowIndex, targetSpan = true) {
     const columnIndex = headerIndexMap[headerName];
     if (!columnIndex) {
-        log(`Header "${headerName}" not found in the indexed headers.`);
+        log(`Header "${headerName}" not found in the indexed headers.`, 2);
         return null;
     }
     // If targetSpan is true, target the <span>, otherwise target the parent <div>
@@ -117,7 +118,7 @@ function startSlaChecker() {
 
     slaCheckerIntervalId = setInterval(() => {
         if (document.readyState !== "complete") {
-            log("SLTool: Document is not ready. Stopping SLA Checker.");
+            log("SLTool: Document is not ready. Stopping SLA Checker.", 2);
             stopSlaChecker();
             return;
         }
@@ -125,7 +126,7 @@ function startSlaChecker() {
         updateAllRows();
     }, 1000);
 
-    log("SLA Checker enabled.");
+    log("SLA Checker enabled.", 3);
 }
 
 function stopSlaChecker() {
@@ -134,7 +135,7 @@ function stopSlaChecker() {
         slaCheckerIntervalId = null;
     }
     disableSlaChecker();
-    log("SLA Checker disabled.");
+    log("SLA Checker disabled.", 3);
 }
 
 function disableSlaChecker() {
@@ -168,7 +169,7 @@ function disableSlaChecker() {
 
 // Row Update Functions
 function updateAllRows() {
-    log("Updating all rows...");
+    log("Updating all rows...", 3);
     let rowIndex = 1;
     while (updateRowColors(rowIndex)) {
         if (!disableSeverityHighlighting) {
@@ -218,7 +219,7 @@ function updateRowColors(rowIndex) {
         return true;
     }
 
-    log(`Row ${rowIndex}: Case Stage: ${caseStage}, Time Elapsed: ${timeElapsedInMinutes}, Gradient: ${gradientColor}`);
+    log(`Row ${rowIndex}: Case Stage: ${caseStage}, Time Elapsed: ${timeElapsedInMinutes}, Gradient: ${gradientColor}`, 4);
     applyGradientColor(rowIndex, gradientColor, caseStage, timeElapsedInMinutes);
     return true;
 }
@@ -381,7 +382,7 @@ function colorSeverityColumn(rowIndex) {
 window.addEventListener("load", () => {
     chrome.storage.sync.get(["slaCheckerEnabled"], (data) => {
         if (data.slaCheckerEnabled) {
-            log("SLTool: Waiting for cases to load...");
+            log("SLTool: Waiting for cases to load...", 3);
             waitForCasesToLoad();
         }
     });
@@ -421,8 +422,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
             rowIndex++;
         }
-    } else if (request.action === "updateDebugMode") {
-        debugMode = !!request.debugMode;
     }
 });
 
@@ -430,7 +429,6 @@ function waitForCasesToLoad() {
     // const totalCasesXPath = "/html/body/app-root/div/div/div/div/ui-view/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-footer/div/div/text()";
     // const totalCasesXPath = "/html/body/app-root/div/div/div/div/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-footer/div/div/text()";
     const totalCasesXPath = "/html/body/app-root/div/div/div/div/app-search/div/div[2]/div[2]/app-search-list/div/ngx-datatable/div/datatable-footer/div/div/text()";
-    
     const result = document.evaluate(totalCasesXPath, document, null, XPathResult.STRING_TYPE, null);
     const totalCasesText = result.stringValue.trim();
 
@@ -438,14 +436,14 @@ function waitForCasesToLoad() {
     if (match) {
         const totalCases = parseInt(match[0], 10);
         if (totalCases > 0) {
-            log("Cases loaded. Starting SLA Checker...");
+            log("Cases loaded. Starting SLA Checker...", 3);
             startSlaChecker();
         } else {
-            log("No cases found. Retrying in 1 second...");
+            log("No cases found. Retrying in 1 second...", 3);
             setTimeout(waitForCasesToLoad, 1000);
         }
     } else {
-        log("Unable to retrieve total cases. Retrying in 1 second...");
+        log("Unable to retrieve total cases. Retrying in 1 second...", 3);
         setTimeout(waitForCasesToLoad, 1000);
     }
 }
@@ -455,9 +453,28 @@ window.addEventListener("beforeunload", () => {
 });
 
 // On load, initialize from storage
-chrome.storage.sync.get(['disableSeverity'], (data) => {
-    disableSeverityHighlighting = !!data.disableSeverity;
+chrome.storage.sync.get(['disableSeverity', 'debugMode', 'debugLogLevel'], (data) => {
+    if (data.disableSeverity !== undefined) {
+        disableSeverityHighlighting = !!data.disableSeverity;
+        log('Loaded disableSeverityHighlighting:', 3, disableSeverityHighlighting);
+    }
+    if (data.debugMode !== undefined) {
+        debugMode = !!data.debugMode;
+        log('Loaded debug mode state:', 3, debugMode);
+    }
+    if (data.debugLogLevel !== undefined) {
+        debugLogLevel = parseInt(data.debugLogLevel, 10);
+        log('Loaded debug log level:', 3, debugLogLevel);
+    }
 });
-chrome.storage.sync.get(['debugMode'], (data) => {
-    debugMode = !!data.debugMode;
+
+chrome.storage.onChanged.addListener((changes) => {
+    if (changes.debugMode) {
+        debugMode = !!changes.debugMode.newValue;
+        log('Debug mode changed:', 2, debugMode);
+    }
+    if (changes.debugLogLevel) {
+        debugLogLevel = parseInt(changes.debugLogLevel.newValue, 10);
+        log('Debug log level changed:', 2, debugLogLevel);
+    }
 });

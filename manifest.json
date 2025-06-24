@@ -18,8 +18,8 @@
         "src/autorefresh.js",
         "src/SLAChecker.js",
         "src/visual_change.js",
-        "src/validator.js",
-        "src/showcasedetails.js"
+        "src/showcasedetails.js",
+        "src/casebuilder.js"
       ]
     }
   ],
