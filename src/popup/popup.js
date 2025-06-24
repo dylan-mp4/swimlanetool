@@ -1,3 +1,4 @@
+// --- Element Selectors ---
 const numberInput = document.getElementById('number-input');
 const saveButton = document.getElementById('set-number');
 const intervalInput = document.getElementById('interval-input');
@@ -8,154 +9,56 @@ const slaCheckerCheckbox = document.getElementById('sla-checker-checkbox');
 const disableFlashingCheckbox = document.getElementById('disable-flashing-checkbox');
 const disableSeverityCheckbox = document.getElementById('disable-severity-checkbox');
 const debugModeCheckbox = document.getElementById('debug-mode-checkbox');
+const debugLogLevelSelect = document.getElementById('debug-log-level');
 const visualChangesCheckbox = document.getElementById('visual-changes-checkbox');
 const commentTextWrapCheckbox = document.getElementById('comment-textwrap-checkbox');
 const searchOverlayCheckbox = document.getElementById('search-overlay-checkbox');
 const discrepancyCheckingCheckbox = document.getElementById('discrepancy-checking-checkbox');
 const autoShowCaseDetailsCheckbox = document.getElementById('auto-show-case-details-checkbox');
 
-function log(message) {
-    console.log(`SLTool: ${message}`);
-}
-// Function to load and propagate values into the popup fields
-function loadPopupValues() {
-    chrome.storage.sync.get(['matchingNumber', 'refreshInterval', 'doomMode', 'autoRefresh', 'slaCheckerEnabled', 'disableFlashing', 'disableSeverity', 'debugMode', 'visualChangesEnabled', 'commentTextWrapEnabled', 'searchOverlayEnabled', 'discrepancyCheckingEnabled'], (data) => {
-        if (data.matchingNumber !== undefined) {
-            numberInput.value = data.matchingNumber;
-        }
-        if (data.refreshInterval !== undefined) {
-            intervalInput.value = data.refreshInterval;
-        }
-        if (data.doomMode !== undefined) {
-            doomModeCheckbox.checked = data.doomMode;
-        }
-        if (data.autoRefresh !== undefined) {
-            autoRefreshCheckbox.checked = data.autoRefresh;
-        }
-        if (data.slaCheckerEnabled !== undefined) {
-            slaCheckerCheckbox.checked = data.slaCheckerEnabled;
-        }
-        if (data.disableFlashing !== undefined) {
-            disableFlashingCheckbox.checked = data.disableFlashing;
-        }
-        if (data.disableSeverity !== undefined) {
-            disableSeverityCheckbox.checked = data.disableSeverity;
-        }
-        if (data.debugMode !== undefined) {
-            debugModeCheckbox.checked = data.debugMode;
-        }
-        if (visualChangesCheckbox) {
-            visualChangesCheckbox.checked = data.visualChangesEnabled !== false;
-        }
-        if (commentTextWrapCheckbox) {
-            commentTextWrapCheckbox.checked = data.commentTextWrapEnabled !== false;
-        }
-        if (searchOverlayCheckbox) {
-            searchOverlayCheckbox.checked = data.searchOverlayEnabled !== false;
-        }
-        if (discrepancyCheckingCheckbox) {
-            discrepancyCheckingCheckbox.checked = data.discrepancyCheckingEnabled !== false;
-        }
-        if (autoShowCaseDetailsCheckbox) {
-            autoShowCaseDetailsCheckbox.checked = data.autoShowCaseDetails !== false;
-        }
-    });
-}
+// --- Utility ---
+var debugLogLevel = 0;
 
-// Load values when the popup is opened
-document.addEventListener('DOMContentLoaded', loadPopupValues);
-
-// Save the SLA Checker state to storage and notify the content script
-slaCheckerCheckbox.addEventListener('change', () => {
-    const slaCheckerEnabled = slaCheckerCheckbox.checked;
-    chrome.storage.sync.set({ slaCheckerEnabled }, () => {
-        log('SLA Checker state saved:', slaCheckerEnabled);
-    });
-
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'updateSlaChecker', enabled: slaCheckerEnabled });
-    });
-});
-
-// Save the matching number to storage
-saveButton.addEventListener('click', () => {
-    const numberToMatch = numberInput.value;
-    chrome.storage.sync.set({ matchingNumber: numberToMatch }, () => {
-        log('Matching number saved:', numberToMatch);
-    });
-
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'updateNumber', number: numberToMatch });
-    });
-
-    const statusMessage = document.getElementById('status-message');
-    statusMessage.textContent = 'Matching number saved.';
-    setTimeout(() => {
-        statusMessage.textContent = '';
-    }, 2000);
-});
-
-// Save the refresh interval to storage
-intervalButton.addEventListener('click', () => {
-    const interval = parseInt(intervalInput.value, 10);
-    if (interval >= 20) {
-        chrome.storage.sync.set({ refreshInterval: interval }, () => {
-            log('Refresh interval saved:', interval);
-        });
-
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            chrome.tabs.sendMessage(tabs[0].id, { action: 'updateInterval', interval: interval });
-        });
-
-        const intervalStatusMessage = document.getElementById('interval-status-message');
-        intervalStatusMessage.textContent = 'Refresh interval saved.';
-        setTimeout(() => {
-            intervalStatusMessage.textContent = '';
-        }, 2000);
-    } else {
-        const intervalStatusMessage = document.getElementById('interval-status-message');
-        intervalStatusMessage.textContent = 'Interval must be at least 20 seconds.';
-        setTimeout(() => {
-            intervalStatusMessage.textContent = '';
-        }, 2000);
+function log(message, level = 3, ...args) {
+    if (debugLogLevel >= level) {
+        console.log(`SLTool: ${message}`, ...args);
     }
-});
+}
 
-// Save the Doom Mode state to storage
-doomModeCheckbox.addEventListener('change', () => {
-    const doomModeEnabled = doomModeCheckbox.checked;
-    chrome.storage.sync.set({ doomMode: doomModeEnabled }, () => {
-        log('Doom Mode state saved:', doomModeEnabled);
+// --- Loaders ---
+function loadPopupValues() {
+    chrome.storage.sync.get([
+        'matchingNumber',
+        'refreshInterval',
+        'doomMode',
+        'autoRefresh',
+        'slaCheckerEnabled',
+        'disableFlashing',
+        'disableSeverity',
+        'debugMode',
+        'debugLogLevel',
+        'visualChangesEnabled',
+        'commentTextWrapEnabled',
+        'searchOverlayEnabled',
+        'discrepancyCheckingEnabled',
+        'autoShowCaseDetails'
+    ], (data) => {
+        if (data.matchingNumber !== undefined) numberInput.value = data.matchingNumber;
+        if (data.refreshInterval !== undefined) intervalInput.value = data.refreshInterval;
+        if (data.doomMode !== undefined) doomModeCheckbox.checked = data.doomMode;
+        if (data.autoRefresh !== undefined) autoRefreshCheckbox.checked = data.autoRefresh;
+        if (data.slaCheckerEnabled !== undefined) slaCheckerCheckbox.checked = data.slaCheckerEnabled;
+        if (data.disableFlashing !== undefined) disableFlashingCheckbox.checked = data.disableFlashing;
+        if (data.disableSeverity !== undefined) disableSeverityCheckbox.checked = data.disableSeverity;
+        if (data.debugMode !== undefined) debugModeCheckbox.checked = data.debugMode;
+        if (debugLogLevelSelect) debugLogLevelSelect.value = data.debugLogLevel !== undefined ? data.debugLogLevel : "0";
+        if (visualChangesCheckbox) visualChangesCheckbox.checked = data.visualChangesEnabled !== false;
+        if (commentTextWrapCheckbox) commentTextWrapCheckbox.checked = data.commentTextWrapEnabled !== false;
+        if (searchOverlayCheckbox) searchOverlayCheckbox.checked = data.searchOverlayEnabled !== false;
+        if (discrepancyCheckingCheckbox) discrepancyCheckingCheckbox.checked = data.discrepancyCheckingEnabled !== false;
+        if (autoShowCaseDetailsCheckbox) autoShowCaseDetailsCheckbox.checked = data.autoShowCaseDetails !== false;
     });
-
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'updateDoomMode', enabled: doomModeEnabled });
-    });
-});
-
-// Save the Auto-Refresh state to storage
-autoRefreshCheckbox.addEventListener('change', () => {
-    const autoRefreshEnabled = autoRefreshCheckbox.checked;
-    chrome.storage.sync.set({ autoRefresh: autoRefreshEnabled }, () => {
-        log('Auto-Refresh state saved:', autoRefreshEnabled);
-    });
-
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'updateAutoRefresh', enabled: autoRefreshEnabled });
-    });
-});
-
-// Save the flashing setting to storage
-disableFlashingCheckbox.addEventListener('change', () => {
-    const disableFlashing = disableFlashingCheckbox.checked;
-    chrome.storage.sync.set({ disableFlashing }, () => {
-        log('Flashing setting saved:', disableFlashing);
-    });
-
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'updateFlashingSetting', disableFlashing });
-    });
-});
+}
 
 function renderHighlightColumns(headers, selectedColumns) {
     const container = document.getElementById('highlight-columns-container');
@@ -197,6 +100,8 @@ function loadHighlightColumns() {
     });
 }
 
+// --- Event Listeners ---
+document.addEventListener('DOMContentLoaded', loadPopupValues);
 document.addEventListener('DOMContentLoaded', loadHighlightColumns);
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -212,27 +117,123 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Save the disable severity setting to storage and notify content script
+// --- Checkbox and Input Handlers ---
+slaCheckerCheckbox.addEventListener('change', () => {
+    const slaCheckerEnabled = slaCheckerCheckbox.checked;
+    chrome.storage.sync.set({ slaCheckerEnabled }, () => {
+        log('SLA Checker state saved:', 2, slaCheckerEnabled);
+    });
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'updateSlaChecker', enabled: slaCheckerEnabled });
+    });
+});
+
+saveButton.addEventListener('click', () => {
+    const numberToMatch = numberInput.value;
+    chrome.storage.sync.set({ matchingNumber: numberToMatch }, () => {
+        log('Matching number saved:', 2, numberToMatch);
+    });
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'updateNumber', number: numberToMatch });
+    });
+
+    const statusMessage = document.getElementById('status-message');
+    statusMessage.textContent = 'Matching number saved.';
+    setTimeout(() => {
+        statusMessage.textContent = '';
+    }, 2000);
+});
+
+intervalButton.addEventListener('click', () => {
+    const interval = parseInt(intervalInput.value, 10);
+    const intervalStatusMessage = document.getElementById('interval-status-message');
+    if (interval >= 20) {
+        chrome.storage.sync.set({ refreshInterval: interval }, () => {
+            log('Refresh interval saved:', 2, interval);
+        });
+
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { action: 'updateInterval', interval: interval });
+        });
+
+        intervalStatusMessage.textContent = 'Refresh interval saved.';
+        setTimeout(() => {
+            intervalStatusMessage.textContent = '';
+        }, 2000);
+    } else {
+        intervalStatusMessage.textContent = 'Interval must be at least 20 seconds.';
+        setTimeout(() => {
+            intervalStatusMessage.textContent = '';
+        }, 2000);
+    }
+});
+
+doomModeCheckbox.addEventListener('change', () => {
+    const doomModeEnabled = doomModeCheckbox.checked;
+    chrome.storage.sync.set({ doomMode: doomModeEnabled }, () => {
+        log('Doom Mode state saved:', 2, doomModeEnabled);
+    });
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'updateDoomMode', enabled: doomModeEnabled });
+    });
+});
+
+autoRefreshCheckbox.addEventListener('change', () => {
+    const autoRefreshEnabled = autoRefreshCheckbox.checked;
+    chrome.storage.sync.set({ autoRefresh: autoRefreshEnabled }, () => {
+        log('Auto-Refresh state saved:', 2, autoRefreshEnabled);
+    });
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'updateAutoRefresh', enabled: autoRefreshEnabled });
+    });
+});
+
+disableFlashingCheckbox.addEventListener('change', () => {
+    const disableFlashing = disableFlashingCheckbox.checked;
+    chrome.storage.sync.set({ disableFlashing }, () => {
+        log('Flashing setting saved:', 2, disableFlashing);
+    });
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'updateFlashingSetting', disableFlashing });
+    });
+});
+
 disableSeverityCheckbox.addEventListener('change', () => {
     const disableSeverity = disableSeverityCheckbox.checked;
     chrome.storage.sync.set({ disableSeverity }, () => {
-        log('Severity highlighting setting saved:', disableSeverity);
+        log('Severity highlighting setting saved:', 2, disableSeverity);
     });
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         chrome.tabs.sendMessage(tabs[0].id, { action: 'updateDisableSeverity', disableSeverity });
     });
 });
 
-// Save the debug mode setting to storage and notify content script
 debugModeCheckbox.addEventListener('change', () => {
     const debugMode = debugModeCheckbox.checked;
     chrome.storage.sync.set({ debugMode }, () => {
-        log('SLTool: Debug mode setting saved:', debugMode);
+        log('SLTool: Debug mode setting saved:', 2, debugMode);
     });
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         chrome.tabs.sendMessage(tabs[0].id, { action: 'updateDebugMode', debugMode });
     });
 });
+
+if (debugLogLevelSelect) {
+    debugLogLevelSelect.addEventListener('change', () => {
+        const debugLogLevel = debugLogLevelSelect.value;
+        chrome.storage.sync.set({ debugLogLevel }, () => {
+            log('Debug log level saved:', 2, debugLogLevel);
+        });
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { action: 'updateDebugLogLevel', debugLogLevel });
+        });
+    });
+}
 
 if (visualChangesCheckbox) {
     visualChangesCheckbox.addEventListener('change', () => {
@@ -249,12 +250,11 @@ if (searchOverlayCheckbox) {
         chrome.storage.sync.set({ searchOverlayEnabled: searchOverlayCheckbox.checked });
     });
 }
-// Save the discrepancy checking setting to storage and notify content script
 if (discrepancyCheckingCheckbox) {
     discrepancyCheckingCheckbox.addEventListener('change', () => {
         const discrepancyCheckingEnabled = discrepancyCheckingCheckbox.checked;
         chrome.storage.sync.set({ discrepancyCheckingEnabled }, () => {
-            log('Discrepancy Checking setting saved:', discrepancyCheckingEnabled);
+            log('Discrepancy Checking setting saved:',2, discrepancyCheckingEnabled);
         });
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             chrome.tabs.sendMessage(tabs[0].id, { action: 'updateDiscrepancyChecking', enabled: discrepancyCheckingEnabled });
@@ -265,7 +265,7 @@ if (autoShowCaseDetailsCheckbox) {
     autoShowCaseDetailsCheckbox.addEventListener('change', () => {
         const autoShowCaseDetails = autoShowCaseDetailsCheckbox.checked;
         chrome.storage.sync.set({ autoShowCaseDetails }, () => {
-            log('Auto Show Case Details setting saved:', autoShowCaseDetails);
+            log('Auto Show Case Details setting saved:',2, autoShowCaseDetails);
         });
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             chrome.tabs.sendMessage(tabs[0].id, { action: 'updateAutoShowCaseDetails', enabled: autoShowCaseDetails });

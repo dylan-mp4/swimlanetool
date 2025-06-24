@@ -1,32 +1,40 @@
+//Debugging and logging setup
 var debugMode = false;
+var debugLogLevel = 0;
 
-function log(message, ...args) {
-    if (debugMode) {
+function log(message, level = 3, ...args) {
+    if (debugMode && debugLogLevel >= level) {
         console.log(`SLTool: ${message}`, ...args);
     }
 }
 
-if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['debugMode'], (data) => {
-        if (data.debugMode !== undefined) {
-            debugMode = !!data.debugMode;
-            log('Loaded debug mode state:', debugMode);
-        }
-    });
-    chrome.storage.onChanged.addListener((changes) => {
-        if (changes.debugMode) {
-            debugMode = !!changes.debugMode.newValue;
-            log('Debug mode changed:', debugMode);
-        }
-    });
-}
+chrome.storage.sync.get(['debugMode', 'debugLogLevel'], (data) => {
+    if (data.debugMode !== undefined) {
+        debugMode = !!data.debugMode;
+        log('Loaded debug mode state:', 2, debugMode);
+    }
+    if (data.debugLogLevel !== undefined) {
+        debugLogLevel = parseInt(data.debugLogLevel, 10);
+        log('Loaded debug log level:', 3, debugLogLevel);
+    }
+});
+chrome.storage.onChanged.addListener((changes) => {
+    if (changes.debugMode) {
+        debugMode = !!changes.debugMode.newValue;
+        log('Debug mode changed:', 2, debugMode);
+    }
+    if (changes.debugLogLevel) {
+        debugLogLevel = parseInt(changes.debugLogLevel.newValue, 10);
+        log('Debug log level changed:', 2, debugLogLevel);
+    }
+});
 
 function addrecordDataButton() {
     // XPath to the h2 element
     const h2XPath = '/html/body/app-root/div/div/div/div/app-search/app-record/div/ngx-toolbar/header/div[1]/ngx-toolbar-title/h2';
     const h2Elem = document.evaluate(h2XPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
     if (!h2Elem) {
-        log('Toolbar h2 not found');
+        log('Toolbar h2 not found', 4);
         return;
     }
 

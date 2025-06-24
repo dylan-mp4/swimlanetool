@@ -1,31 +1,40 @@
 var debugMode = false;
+var debugLogLevel = 0;
 var autoShowCaseDetails = true;
 
-function log(message, ...args) {
-    if (debugMode) {
+function log(message, level = 3, ...args) {
+    if (debugMode && debugLogLevel >= level) {
         console.log(`SLTool: ${message}`, ...args);
     }
 }
 
 if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['autoShowCaseDetails', 'debugMode'], (data) => {
+    chrome.storage.sync.get(['autoShowCaseDetails', 'debugMode', 'debugLogLevel'], (data) => {
         if (data.autoShowCaseDetails !== undefined) {
             autoShowCaseDetails = !!data.autoShowCaseDetails;
-            log('autoShowCaseDetails enabled state:', autoShowCaseDetails);
+            log('autoShowCaseDetails enabled state:',3, autoShowCaseDetails);
         }
         if (data.debugMode !== undefined) {
             debugMode = !!data.debugMode;
-            log('Loaded debug mode state:', debugMode);
+            log('Loaded debug mode state:',3, debugMode);
+        }
+        if (data.debugLogLevel !== undefined) {
+            debugLogLevel = parseInt(data.debugLogLevel, 10);
+            log('Loaded debug log level:', 3, debugLogLevel);
         }
     });
     chrome.storage.onChanged.addListener((changes) => {
         if (changes.autoShowCaseDetails) {
             autoShowCaseDetails = !!changes.autoShowCaseDetails.newValue;
-            log('autoShowCaseDetails enabled changed:', autoShowCaseDetails);
+            log('autoShowCaseDetails enabled changed:',3, autoShowCaseDetails);
         }
         if (changes.debugMode) {
             debugMode = !!changes.debugMode.newValue;
-            log('Debug mode changed:', debugMode);
+            log('Debug mode changed:', 2, debugMode);
+        }
+        if (changes.debugLogLevel) {
+            debugLogLevel = parseInt(changes.debugLogLevel.newValue, 10);
+            log('Debug log level changed:', 2, debugLogLevel);
         }
     });
 }
@@ -38,12 +47,12 @@ function clickToggleButtonBySectionTitle(sectionTitle) {
             const btn = header.querySelector('button.ngx-section-toggle[title="Toggle Content Visibility"]');
             if (btn) {
                 btn.click();
-                log(`Clicked Toggle Content Visibility button for section "${sectionTitle}"`);
+                log(`Clicked Toggle Content Visibility button for section "${sectionTitle}"`,3);
                 return true;
             }
         }
     }
-    log(`Section with title "${sectionTitle}" not found`);
+    log(`Section with title "${sectionTitle}" not found`,3);
     return false;
 }
 
@@ -68,26 +77,27 @@ function runSectionCheckboxLogic() {
                         const checkbox = label.querySelector('input[type="checkbox"]');
                         if (checkbox && !checkbox.checked) {
                             checkbox.click();
-                            log('Checkbox was unchecked, now checked in Admin Controls section!');
+                            log('Checkbox was unchecked, now checked in Admin Controls section!',2);
                         } else if (checkbox && checkbox.checked) {
-                            log('Checkbox already checked in Admin Controls section, no action taken.');
+                            log('Checkbox already checked in Admin Controls section, no action taken.',2);
                         } else {
-                            log('Checkbox not found in label.');
+                            log('Checkbox not found in label.',2);
                         }
                         found = true;
                     }
                 });
                 if (!found) {
-                    log('Checkbox with label "Display All Application Fields" not found in Admin Controls section');
+                    log('Checkbox with label "Display All Application Fields" not found in Admin Controls section',2);
                 }
             } else {
-                log('Section container not found after header');
+                log('Section container not found after header'),2;
             }
         }
     }, 500);
 }
 
 function checkAndRun() {
+    if (!autoShowCaseDetails) return; 
     const elem = document.evaluate(TARGET_XPATH, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
     if (elem && !hasRunForCurrentElement) {
         hasRunForCurrentElement = true;
