@@ -1,4 +1,3 @@
-const TotalCount = "/html/body/app-root/div/div/div/div/app-search/div/div[2]/div[2]/app-search-list/div[2]/ngx-datatable/div/datatable-footer/div/div/text()";
 let audioPlayed = false;
 let userDefinedNumber = 100; // Default value
 let doomModeEnabled = false; // Default to disabled
@@ -31,18 +30,42 @@ chrome.storage.sync.get(['matchingNumber', 'doomMode', 'debugMode', 'debugLogLev
     }
 });
 
+function getCountOfTrackingId() {
+    // Find all custom components (shadow roots)
+    const elements = Array.from(document.querySelectorAll('*')).filter(
+        el => el.tagName.toLowerCase().startsWith('custom-component-')
+    );
+    for (const el of elements) {
+        const reportAttr = el.getAttribute('report');
+        if (reportAttr) {
+            try {
+                const report = JSON.parse(reportAttr);
+                if (report.data && Array.isArray(report.data)) {
+                    const countObj = report.data.find(d => d.name === "Count of Tracking Id");
+                    if (countObj && countObj.series && Array.isArray(countObj.series)) {
+                        const seriesObj = countObj.series.find(s => s.name === "Success");
+                        if (seriesObj && typeof seriesObj.value === "number") {
+                            return seriesObj.value;
+                        }
+                    }
+                }
+            } catch (e) {
+                log("Failed to parse report JSON", 2, e);
+            }
+        }
+    }
+    return null;
+}
+
 function checkNumber() {
     if (!doomModeEnabled) {
         log('Doom Mode is disabled. Skipping', 4);
         return;
     }
 
-    const result = document.evaluate(TotalCount, document, null, XPathResult.STRING_TYPE, null);
-    const text = result.stringValue.trim();
+    const number = getCountOfTrackingId();
 
-    const match = text.match(/\d+/);
-    if (match) {
-        const number = parseInt(match[0], 10);
+    if (typeof number === "number") {
         if (number > userDefinedNumber && number <= 100 && !audioPlayed) {
             log("INIATING DOOM MODE", 1, number);
             playAudio();
@@ -55,7 +78,7 @@ function checkNumber() {
             setTimeout(checkNumber, 5000);
         }
     } else {
-        log("No number found in the text.", 4);
+        log("No count of tracking id found.", 4);
         setTimeout(checkNumber, 5000);
     }
 }
@@ -67,6 +90,13 @@ function playAudio() {
     iframe.style.display = "none";
     document.body.appendChild(iframe);
 }
+function stopAudio() {
+    const iframes = document.querySelectorAll('iframe[src*="youtube-nocookie"]');
+    iframes.forEach(iframe => {
+        iframe.remove();
+    });
+    audioPlayed = false;
+}
 
 // Listener for messages from the popup to update Doom Mode
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -74,6 +104,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         doomModeEnabled = request.enabled;
         log('Updated Doom Mode state:', 3, doomModeEnabled);
         sendResponse({ status: "success" });
+        if (!doomModeEnabled) {
+            stopAudio(); // Stop audio if Doom Mode is disabled
+        }
     }
 });
 
@@ -88,7 +121,7 @@ chrome.storage.onChanged.addListener((changes) => {
     }
 });
 
-// Start checking the number 5 seconds after the page loads
+// Start checking the number 10 seconds after the page loads
 window.addEventListener('load', () => {
     setTimeout(checkNumber, 10000);
 });
