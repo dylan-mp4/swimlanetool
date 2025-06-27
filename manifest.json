@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Swimlane Tool",
   "version": "1.1.1",
-  "description": "A lightweight productivity enhancer for Swimlane users that adds SLA tracking, visual tweaks, auto-refresh, and debugging tools — all customizable via a simple popup interface.",
+  "description": "A lightweight productivity enhancer for Swimlane users that adds SLA tracking, visual tweaks, and auto-refresh",
   "permissions": [
     "storage",
     "activeTab"
