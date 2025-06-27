@@ -6,12 +6,16 @@ function getElementByXPath(xpath) {
 let visualChangesEnabled = true;
 let commentTextWrapEnabled = true;
 let searchOverlayEnabled = true;
+let disableTooltips = false;
+let hideEmptyAwarenessEnabled = false;
 
 // Listen for changes from popup/settings
-chrome.storage.sync.get(['visualChangesEnabled', 'commentTextWrapEnabled'], (data) => {
+chrome.storage.sync.get(['visualChangesEnabled', 'commentTextWrapEnabled', 'disableTooltips','hideEmptyAwareness'], (data) => {
     visualChangesEnabled = data.visualChangesEnabled !== false; // default to true
     commentTextWrapEnabled = data.commentTextWrapEnabled !== false; // default to true
     searchOverlayEnabled = data.searchOverlayEnabled !== false; // default to true
+    hideEmptyAwarenessEnabled = data.hideEmptyAwareness || false; // default to true
+    disableTooltips = data.disableTooltips || false; // default to false
 });
 chrome.storage.onChanged.addListener((changes) => {
     if (changes.visualChangesEnabled) {
@@ -22,6 +26,17 @@ chrome.storage.onChanged.addListener((changes) => {
     }
     if (changes.searchOverlayEnabled) {
         searchOverlayEnabled = changes.searchOverlayEnabled.newValue;
+    }
+    if (changes.hideEmptyAwareness) {
+        hideEmptyAwarenessEnabled = changes.hideEmptyAwareness.newValue;
+    }
+    if (changes.disableTooltips) {
+        disableTooltips = changes.disableTooltips.newValue;
+        if (disableTooltips) {
+            injectNgxTooltipHideCSS();
+        } else {
+            removeNgxTooltipHideCSS();
+        }
     }
 });
 
@@ -118,33 +133,95 @@ function periodicallyReplaceDropdown() {
 
 
 function applyTextWrapToComments() {
-    // XPath to get the total number of comments
-    // const totalCommentsXPath = '/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/div/form/fieldset/div/div[3]/div/record-tabs/ngx-tabs/section/div[2]/ngx-tab[1]/div/div/div[1]/div[1]/record-section/div/div[8]/div/record-section/ngx-section/section/div/div/div/div/record-section/div/div/div[1]/div/comments-field/div/div[1]/div[1]/span/b';
-    const totalCommentsXPath = '/html/body/app-root/div/div/div/div/app-search/app-record/div/div/form/fieldset/div/div[3]/div/record-tabs/ngx-tabs/section/div[2]/ngx-tab[1]/div/div/div[1]/div[1]/record-section/div/div[8]/div/record-section/ngx-section/section/div/div/div/div/record-section/div/div/div[1]/div/comments-field/div/div[1]/div[1]/span/b';
-
-    const totalCommentsElem = getElementByXPath(totalCommentsXPath);
-    if (!totalCommentsElem) return;
-
-    const totalComments = parseInt(totalCommentsElem.textContent, 10);
-    if (isNaN(totalComments) || totalComments < 1) return;
-
-    // Loop through each comment and apply text-wrap: auto to the span
-    for (let i = 1; i <= totalComments; i++) {
-        // const commentSpanXPath = `/html/body/app-root/div/div/div/div/ui-view/app-search/app-record/div/div/form/fieldset/div/div[3]/div/record-tabs/ngx-tabs/section/div[2]/ngx-tab[1]/div/div/div[1]/div[1]/record-section/div/div[8]/div/record-section/ngx-section/section/div/div/div/div/record-section/div/div/div[1]/div/comments-field/div/div[1]/comments-list/div/div[${i}]/comment/div/blockquote/div/div[2]/div/span`;
-        const commentSpanXPath = `/html/body/app-root/div/div/div/div/app-search/app-record/div/div/form/fieldset/div/div[3]/div/record-tabs/ngx-tabs/section/div[2]/ngx-tab[1]/div/div/div[1]/div[1]/record-section/div/div[8]/div/record-section/ngx-section/section/div/div/div/div/record-section/div/div/div[1]/div/comments-field/div/div[1]/comments-list/div/div/comment/div/blockquote/div/div[2]/div/span`;
-
-        const spanElem = getElementByXPath(commentSpanXPath);
-        if (spanElem) {
-            spanElem.style.textWrap = 'auto';
-        }
-    }
+    // Select all elements with class 'comment--body--pre ng-star-inserted'
+    const commentBodies = document.querySelectorAll('.comment--body--pre.ng-star-inserted');
+    commentBodies.forEach(elem => {
+        elem.style.textWrap = 'auto';
+        // For maximum compatibility, also set word-break and white-space
+        elem.style.wordBreak = 'break-word';
+        elem.style.whiteSpace = 'pre-wrap';
+    });
 }
+
 function setOverlayHeight() {
     const overlays = document.getElementsByClassName('cdk-overlay-pane');
     for (let i = 0; i < overlays.length; i++) {
         overlays[i].style.height = '100%';
     }
 }
+
+function injectNgxTooltipHideCSS() {
+    if (document.getElementById('sltool-hide-ngx-tooltip-css')) return; // Prevent duplicates
+    const style = document.createElement('style');
+    style.id = 'sltool-hide-ngx-tooltip-css';
+    style.textContent = `
+        .ngx-tooltip-content {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function hideEmptyAwareness() {
+    const xpathIndices = [1, 2, 3, 4];
+    const baseXpath = '/html/body/app-root/div/div/div/div/app-search/app-record/div/div/form/fieldset/div/div';
+    xpathIndices.forEach(idx => {
+        const xpath = `${baseXpath}[${idx}]`;
+        const el = getElementByXPath(xpath);
+        if (el) {
+            const output = el.querySelector('output');
+            if (!output) {
+                el.style.display = 'none';
+                console.log(`Hiding element at XPath: ${xpath} (no <output> found)`);
+            } else {
+                let onlyEmptyOrComments = true;
+                let outputText = '';
+                for (let node of output.childNodes) {
+                    if (
+                        node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== ''
+                    ) {
+                        onlyEmptyOrComments = false;
+                        outputText += node.textContent.trim();
+                    }
+                    if (
+                        node.nodeType === Node.ELEMENT_NODE
+                    ) {
+                        onlyEmptyOrComments = false;
+                        outputText += node.textContent.trim();
+                    }
+                }
+                if (onlyEmptyOrComments) {
+                    el.style.display = 'none';
+                    console.log(`Hiding element at XPath: ${xpath} (<output> is empty or only comments)`);
+                } else if (
+                    outputText === 'No Exceptional Situations currently' ||
+                    outputText === 'No Internal Exceptional Situations currently'
+                ) {
+                    el.style.display = 'none';
+                    console.log(`Hiding element at XPath: ${xpath} (outputText: "${outputText}")`);
+                } else {
+                    el.style.display = '';
+                    console.log(`Keeping element at XPath: ${xpath} (<output> has content)`);
+                }
+            }
+        }
+    });
+}
+
+function removeNgxTooltipHideCSS() {
+    const style = document.getElementById('sltool-hide-ngx-tooltip-css');
+    if (style) style.remove();
+}
+
+if (disableTooltips) {
+    injectNgxTooltipHideCSS();
+} else {
+    removeNgxTooltipHideCSS();
+}
+
 // Run periodically to handle dynamic DOM changes
 setInterval(() => {
     periodicallyReplaceDropdown();
@@ -154,4 +231,15 @@ setInterval(() => {
     if (searchOverlayEnabled) {
         setOverlayHeight();
     }
+    if (hideEmptyAwarenessEnabled) {
+        hideEmptyAwareness();
+    }
 }, 1000);
+
+setInterval(() => {
+    if (disableTooltips) {
+        injectNgxTooltipHideCSS();
+    } else {
+        removeNgxTooltipHideCSS();
+    }
+}, 10000);
