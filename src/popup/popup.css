@@ -217,3 +217,14 @@ p,
     color: #ff5370;
     font-weight: 500;
 }
+.version-footer {
+    position: fixed;
+    right: 18px;
+    bottom: 10px;
+    font-size: 11px;
+    color: #b39ddb;
+    opacity: 0.7;
+    z-index: 100;
+    pointer-events: none;
+    user-select: none;
+}

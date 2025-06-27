@@ -110,10 +110,23 @@ function loadHighlightColumns() {
 }
 
 // --- Event Listeners ---
-document.addEventListener('DOMContentLoaded', loadPopupValues);
-document.addEventListener('DOMContentLoaded', loadHighlightColumns);
-
 document.addEventListener('DOMContentLoaded', () => {
+    loadPopupValues();
+    loadHighlightColumns();
+
+    // Tab switching logic
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(tc => tc.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        });
+    });
+
+    // Select All Columns
     const selectAllBtn = document.getElementById('select-all-columns');
     if (selectAllBtn) {
         selectAllBtn.addEventListener('click', () => {
@@ -134,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Deselect All Columns functionality
+    // Deselect All Columns
     const deselectAllBtn = document.getElementById('deselect-all-columns');
     if (deselectAllBtn) {
         deselectAllBtn.addEventListener('click', () => {
@@ -143,6 +156,15 @@ document.addEventListener('DOMContentLoaded', () => {
             checkboxes.forEach(cb => cb.checked = false);
             chrome.storage.sync.set({ highlightColumns: [] });
         });
+    }
+
+    // Version number
+    const versionSpan = document.getElementById('version-number');
+    if (versionSpan && chrome.runtime && chrome.runtime.getManifest) {
+        const manifest = chrome.runtime.getManifest();
+        if (manifest && manifest.version) {
+            versionSpan.textContent = `v${manifest.version}`;
+        }
     }
 });
 
