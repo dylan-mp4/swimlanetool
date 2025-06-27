@@ -1,3 +1,5 @@
+// Deprecated since SL Version: 25.1.4
+
 var debugMode = false;
 var discrepancyCheckingEnabled = true;
 
