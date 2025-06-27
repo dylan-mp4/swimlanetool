@@ -1,48 +1,219 @@
 body {
-    font-family: Arial, sans-serif;
-    width: 300px;
-    padding: 10px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    width: 500px;
+    padding: 0;
+    margin: 0;
+    background: #1a1333;
+    color: #e0d7ff;
+}
+
+.popup-container {
+    width: 100%;
+    /* background: #24194a; */
+    border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(40, 0, 80, 0.18), 0 1.5px 4px rgba(40, 0, 80, 0.12);
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-bottom: 10px;
+}
+
+.tab-header {
+    display: flex;
+    flex-wrap: wrap;
+    border-bottom: 1.5px solid #3d2a6d;
+    margin-bottom: 18px;
+    gap: 4px;
+    justify-content: flex-start;
+    background: #1a1333;
+}
+
+.tab-btn {
+    flex: 0 1 110px;
+    max-width: 90px;
+    min-width: 70px;
+    background: none;
+    border: none;
+    outline: none;
+    padding: 10px 0 8px 0;
+    cursor: pointer;
+    font-size: 14px;
+    color: #b39ddb;
+    border-radius: 8px 8px 0 0;
+    transition: background 0.2s, color 0.2s;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.tab-btn.active {
+    background: #7c4dff;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(124, 77, 255, 0.12);
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.25s;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.option-desc {
+    font-size: 12px;
+    color: #b39ddb;
+    margin: -4px 0 10px 28px;
+    line-height: 1.4;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+    max-width: 92%;
+}
+.interval-status-message {
+    font-size: 13px;
+    color: #b39ddb;
+    margin-top: 8px;
+    margin-left: 28px;
+}
+.interval-status-message.error {
+    color: #ff5370 !important;
+    font-weight: 500;
 }
 
 h1 {
-    font-size: 18px;
-    margin-bottom: 10px;
+    font-size: 20px;
+    margin-bottom: 14px;
+    color: #b388ff;
+    font-weight: 600;
 }
+
 h2 {
-    font-size: 14px;
+    font-size: 15px;
     margin-bottom: 10px;
+    color: #d1b3ff;
+    font-weight: 500;
+}
+
+h3 {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #b388ff;
+    font-weight: 500;
 }
 
 label {
-    display: block;
-    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #e0d7ff;
+    cursor: pointer;
+}
+
+input[type="checkbox"] {
+    accent-color: #7c4dff;
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    background: #2d2157;
+    border-radius: 4px;
 }
 
 input[type="number"] {
-    width: 100%;
-    padding: 5px;
+    width: 90%;
+    padding: 7px 10px;
     margin-bottom: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    border: 1.5px solid #3d2a6d;
+    border-radius: 6px;
+    font-size: 14px;
+    background: #2d2157;
+    color: #e0d7ff;
+    transition: border 0.2s;
+}
+
+input[type="number"]:focus {
+    border-color: #7c4dff;
+    outline: none;
 }
 
 button {
-    width: 100%;
-    padding: 8px;
-    background-color: #137df7a2;
+    width: 90%;
+    padding: 10px;
+    background-color: #7c4dff;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     margin-top: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 4px rgba(124, 77, 255, 0.10);
 }
 
 button:hover {
-    background-color: #45a049;
+    background-color: #512da8;
+}
+
+select {
+    width: 90%;
+    padding: 7px 10px;
+    border: 1.5px solid #3d2a6d;
+    border-radius: 6px;
+    font-size: 14px;
+    background: #2d2157;
+    color: #e0d7ff;
+    margin-bottom: 10px;
+    transition: border 0.2s;
+}
+
+select:focus {
+    border-color: #7c4dff;
+    outline: none;
+}
+
+#highlight-columns-container label {
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: #d1b3ff;
+}
+.highlight-columns-actions {
+    display: flex;
+    width: 95%;
+    gap: 10px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+.highlight-columns-actions button {
+    width: auto;
+    flex: 1 1 0;
+    margin-top: 0;
+}
+p,
+.error {
+    font-size: 13px;
+    margin: 6px 0 0 0;
+    color: #b39ddb;
 }
 
 .error {
-    color: red;
-    font-size: 12px;
-    margin-top: 5px;
+    color: #ff5370;
+    font-weight: 500;
 }

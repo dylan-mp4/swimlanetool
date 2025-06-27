@@ -16,6 +16,8 @@ const searchOverlayCheckbox = document.getElementById('search-overlay-checkbox')
 const discrepancyCheckingCheckbox = document.getElementById('discrepancy-checking-checkbox');
 const autoShowCaseDetailsCheckbox = document.getElementById('auto-show-case-details-checkbox');
 const developerSettingsCheckbox = document.getElementById('developer-settings-checkbox');
+const disableTooltipsCheckbox = document.getElementById('disable-tooltips-checkbox');
+const hideEmptyAwarenessCheckbox = document.getElementById('hide-empty-awareness-checkbox');
 
 // --- Utility ---
 var debugLogLevel = 0;
@@ -43,7 +45,9 @@ function loadPopupValues() {
         'searchOverlayEnabled',
         'discrepancyCheckingEnabled',
         'autoShowCaseDetails',
-        'developerSettingsEnabled'
+        'developerSettingsEnabled',
+        'disableTooltips',
+        'hideEmptyAwareness'
     ], (data) => {
         if (data.matchingNumber !== undefined) numberInput.value = data.matchingNumber;
         if (data.refreshInterval !== undefined) intervalInput.value = data.refreshInterval;
@@ -60,6 +64,8 @@ function loadPopupValues() {
         if (discrepancyCheckingCheckbox) discrepancyCheckingCheckbox.checked = data.discrepancyCheckingEnabled !== false;
         if (autoShowCaseDetailsCheckbox) autoShowCaseDetailsCheckbox.checked = data.autoShowCaseDetails !== false;
         if (developerSettingsCheckbox) developerSettingsCheckbox.checked = data.developerSettingsEnabled === true;
+        if (disableTooltipsCheckbox) disableTooltipsCheckbox.checked = data.disableTooltips === true;
+        if (hideEmptyAwarenessCheckbox) hideEmptyAwarenessCheckbox.checked = data.hideEmptyAwareness === true;
     });
 }
 
@@ -113,9 +119,29 @@ document.addEventListener('DOMContentLoaded', () => {
         selectAllBtn.addEventListener('click', () => {
             const container = document.getElementById('highlight-columns-container');
             const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-            checkboxes.forEach(cb => cb.checked = true);
-            const checked = Array.from(checkboxes).map(cb => cb.value);
+            const disableSeverity = disableSeverityCheckbox && disableSeverityCheckbox.checked === false;
+            checkboxes.forEach(cb => {
+                if (disableSeverity && cb.value.trim().toLowerCase() === 'severity') {
+                    cb.checked = false;
+                } else {
+                    cb.checked = true;
+                }
+            });
+            const checked = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
             chrome.storage.sync.set({ highlightColumns: checked });
+        });
+    }
+
+    // Deselect All Columns functionality
+    const deselectAllBtn = document.getElementById('deselect-all-columns');
+    if (deselectAllBtn) {
+        deselectAllBtn.addEventListener('click', () => {
+            const container = document.getElementById('highlight-columns-container');
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+            chrome.storage.sync.set({ highlightColumns: [] });
         });
     }
 });
@@ -164,12 +190,14 @@ intervalButton.addEventListener('click', () => {
         intervalStatusMessage.textContent = 'Refresh interval saved.';
         setTimeout(() => {
             intervalStatusMessage.textContent = '';
-        }, 2000);
+        }, 5000);
     } else {
+        intervalStatusMessage.classList.add('error');
         intervalStatusMessage.textContent = 'Interval must be at least 20 seconds.';
         setTimeout(() => {
             intervalStatusMessage.textContent = '';
-        }, 2000);
+            intervalStatusMessage.classList.remove('error');
+        }, 5000);
     }
 });
 
@@ -284,5 +312,30 @@ if (developerSettingsCheckbox) {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             chrome.tabs.sendMessage(tabs[0].id, { action: 'updateDeveloperSettings', developerSettingsEnabled });
         });
+    });
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(tc => tc.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        });
+    });
+});
+
+if (disableTooltipsCheckbox) {
+    disableTooltipsCheckbox.addEventListener('change', () => {
+        chrome.storage.sync.set({ disableTooltips: disableTooltipsCheckbox.checked });
+    });
+}
+if (hideEmptyAwarenessCheckbox) {
+    hideEmptyAwarenessCheckbox.addEventListener('change', () => {
+        chrome.storage.sync.set({ hideEmptyAwareness: hideEmptyAwarenessCheckbox.checked });
     });
 }

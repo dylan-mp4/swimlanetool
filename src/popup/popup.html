@@ -10,90 +10,114 @@
 
 <body>
     <div class="popup-container">
-        <h1>SLA Checker</h1>
-        <label for="sla-checker-checkbox">
-            <input type="checkbox" id="sla-checker-checkbox" />
-            Enable SLA Checker
-        </label>
-        <label for="disable-flashing-checkbox">
-            <input type="checkbox" id="disable-flashing-checkbox" />
-            Disable Flashing for Awaiting SLA
-        </label>
-        <label for="disable-severity-checkbox">
-            <input type="checkbox" id="disable-severity-checkbox" />
-            Disable Severity Highlighting
-        </label>
-        <h3>Select Highlighted SLA Columns</h3>
-        <p>Defaults to the first column if none are selected (it's recommended to de-select severity)</p>
-        <div id="highlight-columns-container">
-            <span>Loading columns...</span>
+        <div class="tab-header">
+            <button class="tab-btn active" data-tab="sla">SLA</button>
+            <button class="tab-btn" data-tab="refresh">Refresh</button>
+            <button class="tab-btn" data-tab="visual">Visual</button>
+            <button class="tab-btn" data-tab="fun">Fun</button>
+            <button class="tab-btn" data-tab="debug">Debug</button>
+            <!-- <button class="tab-btn" data-tab="placeholder">placeholder</button> -->
         </div>
-        <div>
-            <button id="select-all-columns" type="button">Select All</button>
+        <!-- SLA CHECKER -->
+        <div class="tab-content active" id="tab-sla">
+            <h1>SLA Checker</h1>
+            <label><input type="checkbox" id="sla-checker-checkbox" /> Enable SLA Checker</label>
+            <p class="option-desc">Highlights cases based on Time Left in SLA</p>
+            <label><input type="checkbox" id="disable-flashing-checkbox" /> Disable Flashing for Awaiting SLA</label>
+            <p class="option-desc">Disables the flashing effect for cases that are awaiting SLA.</p>
+            <label><input type="checkbox" id="disable-severity-checkbox" /> Disable Severity Highlighting</label>
+            <p class="option-desc">Disables the highlighting of severity in SLA columns.</p>
+            <h3>Select Highlighted SLA Columns</h3>
+            <p>Defaults to the first column if none are selected (it's recommended to de-select severity)</p><br>
+            <div id="highlight-columns-container"><span>Loading columns...</span></div>
+            <div class="highlight-columns-actions">
+                <button id="select-all-columns" type="button">Select All</button>
+                <button id="deselect-all-columns" type="button">Deselect All</button>
+            </div>
         </div>
-        <h1>Auto Refresh</h1>
-        <label for="auto-refresh-checkbox">
-            <input type="checkbox" id="auto-refresh-checkbox" />
-            Enable Auto Refresh
-        </label>
-        <h3>Set Auto-Refresh Interval</h3>
-        <label for="interval-input">Refresh Interval (seconds):</label>
-        <input type="number" id="interval-input" placeholder="Enter interval (min 20s)" />
-        <button id="set-interval">Set Interval</button>
-        <p id="interval-status-message"></p>
-        <h1>Discrepancy Checking</h1>
-        <label for="discrepancy-checking-checkbox">
-            <input type="checkbox" id="discrepancy-checking-checkbox" />
-            Enable Discrepancy Checking
-        </label>
-        <h1>Visual Modifications</h1>
-        <label for="visual-changes-checkbox">
-            <input type="checkbox" id="visual-changes-checkbox" />
-            Change Save Dropdown to Buttons in cases
-        </label>
-        <label for="comment-textwrap-checkbox">
-            <input type="checkbox" id="comment-textwrap-checkbox" />
-            Enable Comment Text Wrap
-        </label>
-        <label for="search-overlay-checkbox">
-            <input type="checkbox" id="search-overlay-checkbox" />
-            Enable Search Overlay height adjustment
-        </label>
-        <label for="auto-show-case-details-checkbox">
-            <input type="checkbox" id="auto-show-case-details-checkbox" />
-            Enable Auto Show Case Details
-        </label>
-        <h1>Fun</h1>
-        <h2>Doom Mode</h2>
-        <label for="doom-mode-checkbox">
-            <input type="checkbox" id="doom-mode-checkbox" />
-            Enable Doom Mode
-        </label>
+        <div class="tab-content" id="tab-refresh">
+            <h1>Auto Refresh</h1>
+            <label><input type="checkbox" id="auto-refresh-checkbox" /> Enable Auto Refresh</label>
+            <p class="option-desc">Automatically refreshes the case wall at a set interval.</p>
+            <h3>Set Auto-Refresh Interval</h3>
+            <label for="interval-input">Refresh Interval (seconds):</label>
+            <p id="interval-status-message"></p>
+            <input type="number" id="interval-input" placeholder="Enter interval (min 20s)" />
+            <button id="set-interval">Set Interval</button>
+            <!-- <h1>Discrepancy Checking</h1> -->
+            <!-- <label><input type="checkbox" id="discrepancy-checking-checkbox" /> Enable Discrepancy Checking</label> -->
+        </div>
+        <!-- VISUAL MODIFICATIONS -->
+        <div class="tab-content" id="tab-visual">
+            <h1>Visual Modifications</h1>
+            <label>
+                <input type="checkbox" id="visual-changes-checkbox" />
+                Change Save Dropdown to Buttons in cases
+            </label>
+            <p class="option-desc">Replaces the save dropdown in case views with direct action buttons for faster
+                workflow.</p>
 
-        <h2>Number to Activate Doom Mode</h2>
-        <label for="number-input">Matching Number:</label>
-        <input type="number" id="number-input" placeholder="Enter number" />
-        <button id="set-number">Submit</button>
-        <p id="status-message"></p>
+            <label>
+                <input type="checkbox" id="comment-textwrap-checkbox" />
+                Enable Comment Text Wrap
+            </label>
+            <p class="option-desc">Allows long comments to wrap onto multiple lines instead of overflowing.</p>
+
+            <label>
+                <input type="checkbox" id="search-overlay-checkbox" />
+                Enable Search Overlay height adjustment
+            </label>
+            <p class="option-desc">Forces the search overlay to use the full available height for better visibility.</p>
+
+            <label>
+                <input type="checkbox" id="auto-show-case-details-checkbox" />
+                Enable Auto Show Case Details
+            </label>
+            <p class="option-desc">Automatically expands case details when opening a case.</p>
+
+            <label>
+                <input type="checkbox" id="disable-tooltips-checkbox" />
+                Disable Tooltips
+            </label>
+            <p class="option-desc">Removes all tooltips from the interface for a cleaner experience.</p>
+            <label>
+                <input type="checkbox" id="hide-empty-awareness-checkbox" />
+                Hide Empty Awareness Sections
+            </label>
+            <p class="option-desc">Automatically hides empty or irrelevant awareness sections in the case view for a
+                cleaner interface.</p>
+
+        </div>
+        <!-- FUN -->
+        <div class="tab-content" id="tab-fun">
+            <h1>Fun</h1>
+            <h2>Doom Mode</h2>
+            <label><input type="checkbox" id="doom-mode-checkbox" /> Enable Doom Mode</label>
+            <h2>Number to Activate Doom Mode</h2>
+            <label for="number-input">Matching Number:</label>
+            <p class="option-desc">If the total amount of cases is higher than this Doom Mode will commence.</p>
+            <input type="number" id="number-input" placeholder="Enter number" />
+            <button id="set-number">Submit</button>
+            <p id="status-message"></p>
+        </div>
+        <!-- DEBUGGING -->
+        <div class="tab-content" id="tab-debug">
+            <h2>Debugging</h2>
+            <label><input type="checkbox" id="debug-mode-checkbox" /> Enable Debug Logging</label>
+            <p class="option-desc">Logs debug information to the console for troubleshooting.</p>
+            <label for="debug-log-level">Debug Log Level:</label>
+            <select id="debug-log-level">
+                <option value="0">0 - None</option>
+                <option value="1">1 - Errors and Important Info</option>
+                <option value="2">2 - Warnings</option>
+                <option value="3">3 - Verbose</option>
+                <option value="4">4 - Extra Verbose</option>
+            </select>
+            <!-- DEV -->
+            <h2>Developer Settings</h2>
+            <label><input type="checkbox" id="developer-settings-checkbox" /> Enable Developer Settings</label>
+        </div>
     </div>
-    <h2>Debugging</h2>
-    <label for="debug-mode-checkbox">
-        <input type="checkbox" id="debug-mode-checkbox" />
-        Enable Debug Logging
-    </label>
-    <label for="debug-log-level">Debug Log Level:</label>
-    <select id="debug-log-level">
-        <option value="0">0 - None</option>
-        <option value="1">1 - Errors and Important Info</option>
-        <option value="2">2 - Warnings</option>
-        <option value="3">3 - Verbose</option>
-        <option value="4">4 - Extra Verbose</option>
-    </select>
-    <h2>Developer Settings</h2>
-    <label for="developer-settings-checkbox">
-        <input type="checkbox" id="developer-settings-checkbox" />
-        Enable Developer Settings
-    </label>
     <script src="popup.js"></script>
 </body>
 
