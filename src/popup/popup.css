@@ -1,6 +1,6 @@
 body {
     font-family: 'Segoe UI', Arial, sans-serif;
-    width: 500px;
+    width: 600px;
     padding: 0;
     margin: 0;
     background: #1a1333;
@@ -85,12 +85,14 @@ body {
     white-space: normal;
     max-width: 92%;
 }
+
 .interval-status-message {
     font-size: 13px;
     color: #b39ddb;
     margin-top: 8px;
     margin-left: 28px;
 }
+
 .interval-status-message.error {
     color: #ff5370 !important;
     font-weight: 500;
@@ -194,6 +196,7 @@ select:focus {
     font-size: 13px;
     color: #d1b3ff;
 }
+
 .highlight-columns-actions {
     display: flex;
     width: 95%;
@@ -201,11 +204,13 @@ select:focus {
     margin-top: 8px;
     margin-bottom: 8px;
 }
+
 .highlight-columns-actions button {
     width: auto;
     flex: 1 1 0;
     margin-top: 0;
 }
+
 p,
 .error {
     font-size: 13px;
@@ -217,6 +222,7 @@ p,
     color: #ff5370;
     font-weight: 500;
 }
+
 .version-footer {
     position: fixed;
     right: 18px;
@@ -227,4 +233,113 @@ p,
     z-index: 100;
     pointer-events: none;
     user-select: none;
+}
+
+/* Audio URL Container */
+.audio-url-container {
+    display: flex;
+    flex-direction: column; /* Stack label and input row vertically */
+    margin-bottom: 10px;
+    background: #24194a;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    width: 93%;
+}
+
+/* Labels for Stages */
+.audio-url-label {
+    font-size: 14px;
+    color: #d1b3ff;
+    margin-bottom: 5px;
+}
+
+/* Input Row */
+.audio-url-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Add spacing between input and icons */
+}
+
+/* Input Fields */
+.audio-url-input {
+    flex: 1; /* Allow input to take up available space */
+    padding: 6px;
+    border: 1.5px solid #3d2a6d;
+    border-radius: 6px;
+    background: #2d2157;
+    color: #e0d7ff;
+    font-size: 14px;
+    transition: border 0.2s;
+    width: 70%; /* Ensure input takes full width */
+}
+
+.audio-url-input:focus {
+    border-color: #7c4dff;
+    outline: none;
+}
+
+/* Play and Pause Icons */
+.icon {
+    cursor: pointer;
+    color: #7c4dff;
+    font-size: 18px;
+    transition: color 0.2s;
+}
+
+.icon:hover {
+    color: #512da8;
+}
+/* Dropdown for Pre-Saved Sounds */
+.audio-url-dropdown {
+    width: 93%;
+    padding: 6px;
+    border: 1.5px solid #3d2a6d;
+    border-radius: 6px;
+    background: #2d2157;
+    color: #e0d7ff;
+    font-size: 14px;
+    margin-bottom: 8px;
+    transition: border 0.2s;
+}
+
+.audio-url-dropdown:focus {
+    border-color: #7c4dff;
+    outline: none;
+}
+
+/* Input Fields */
+.audio-url-input {
+    width: 91%;
+    padding: 6px;
+    border: 1.5px solid #3d2a6d;
+    border-radius: 6px;
+    background: #2d2157;
+    color: #e0d7ff;
+    font-size: 14px;
+    margin-bottom: 8px;
+    transition: border 0.2s;
+}
+
+.audio-url-input:focus {
+    border-color: #7c4dff;
+    outline: none;
+}
+/* Button Row */
+.audio-url-buttons {
+    display: flex;
+    gap: 10px; /* Add spacing between buttons */
+    margin-top: 8px; /* Add spacing above the button row */
+}
+
+/* Play and Pause Icons */
+.icon {
+    cursor: pointer;
+    color: #7c4dff;
+    font-size: 18px;
+    transition: color 0.2s;
+}
+
+.icon:hover {
+    color: #512da8;
 }

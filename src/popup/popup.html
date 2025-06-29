@@ -12,10 +12,12 @@
     <div class="popup-container">
         <div class="tab-header">
             <button class="tab-btn active" data-tab="sla">SLA</button>
+            <button class="tab-btn" data-tab="alerts">Alerts</button>
             <button class="tab-btn" data-tab="refresh">Refresh</button>
             <button class="tab-btn" data-tab="visual">Visual</button>
             <button class="tab-btn" data-tab="fun">Fun</button>
             <button class="tab-btn" data-tab="debug">Debug</button>
+
             <!-- <button class="tab-btn" data-tab="placeholder">placeholder</button> -->
         </div>
         <!-- SLA CHECKER -->
@@ -46,6 +48,26 @@
             <button id="set-interval">Set Interval</button>
             <!-- <h1>Discrepancy Checking</h1> -->
             <!-- <label><input type="checkbox" id="discrepancy-checking-checkbox" /> Enable Discrepancy Checking</label> -->
+        </div>
+        <!-- ALERTS -->
+        <div class="tab-content" id="tab-alerts">
+            <h1>Alerts</h1>
+            <label>
+                <input type="checkbox" id="alerts-enabled-checkbox" />
+                Enable Alerts
+            </label>
+            <p class="option-desc">Recieve alerts for new cases that have entered the wall</p>
+
+            <h3>Select Case Stages to Alert On</h3>
+            <div id="alert-stages-container">
+                <span>Loading case stages...</span>
+            </div>
+            <h3>Set Audio URLs for Case Stages</h3>
+            <div id="audio-urls-container">
+                <span>Loading case stages...</span>
+            </div>
+            <button id="save-audio-urls" type="button">Save Audio URLs</button>
+            <p id="audio-urls-status-message"></p>
         </div>
         <!-- VISUAL MODIFICATIONS -->
         <div class="tab-content" id="tab-visual">
