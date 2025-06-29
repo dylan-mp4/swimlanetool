@@ -269,7 +269,7 @@ function colorSeverityColumn(rowElem) {
 window.addEventListener("load", () => {
     chrome.storage.sync.get(["slaCheckerEnabled"], (data) => {
         if (data.slaCheckerEnabled) {
-            log("SLTool: Waiting for cases to load...", 3);
+            log("Waiting for cases to load...", 3);
             waitForCasesToLoad();
         }
     });
