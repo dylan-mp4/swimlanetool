@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Swimlane Tool",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A lightweight productivity enhancer for Swimlane users that adds SLA tracking, visual tweaks, and auto-refresh",
   "permissions": [
     "storage",
@@ -19,7 +19,8 @@
         "src/SLAChecker.js",
         "src/visual_change.js",
         "src/showcasedetails.js",
-        "src/casebuilder.js"
+        "src/casebuilder.js",
+        "src/alerts.js"
       ]
     }
   ],

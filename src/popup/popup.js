@@ -18,9 +18,16 @@ const autoShowCaseDetailsCheckbox = document.getElementById('auto-show-case-deta
 const developerSettingsCheckbox = document.getElementById('developer-settings-checkbox');
 const disableTooltipsCheckbox = document.getElementById('disable-tooltips-checkbox');
 const hideEmptyAwarenessCheckbox = document.getElementById('hide-empty-awareness-checkbox');
+const alertsEnabledCheckbox = document.getElementById('alerts-enabled-checkbox');
+const alertStagesContainer = document.getElementById('alert-stages-container');
+const audioUrlsContainer = document.getElementById('audio-urls-container');
+const saveAudioUrlsButton = document.getElementById('save-audio-urls');
+const testAudioAlertButton = document.getElementById('test-audio-alert');
+const stopAudioAlertButton = document.getElementById('stop-audio-alert');
 
 // --- Utility ---
 var debugLogLevel = 0;
+const testAudioIframes = {};
 
 function log(message, level = 3, ...args) {
     if (debugLogLevel >= level) {
@@ -47,7 +54,7 @@ function loadPopupValues() {
         'autoShowCaseDetails',
         'developerSettingsEnabled',
         'disableTooltips',
-        'hideEmptyAwareness'
+        'hideEmptyAwareness',
     ], (data) => {
         if (data.matchingNumber !== undefined) numberInput.value = data.matchingNumber;
         if (data.refreshInterval !== undefined) intervalInput.value = data.refreshInterval;
@@ -109,7 +116,177 @@ function loadHighlightColumns() {
     });
 }
 
+// --- Audio URL Handlers ---
+function loadAlertSettings() {
+    chrome.storage.sync.get(['alertsEnabled', 'alertStages', 'alertAudioUrls'], (data) => {
+        if (alertsEnabledCheckbox) alertsEnabledCheckbox.checked = data.alertsEnabled || false;
+
+        // Load case stages
+        const stages = ["Awaiting Analyst", "Assessment", "Analyst Follow Up", "Response Received"];
+        const selectedStages = data.alertStages || [];
+        const audioUrls = data.alertAudioUrls || {};
+        renderAlertStages(stages, selectedStages);
+        renderAudioUrls(stages, audioUrls);
+    });
+}
+function renderAlertStages(stages, selectedStages) {
+    alertStagesContainer.innerHTML = '';
+    stages.forEach(stage => {
+        const id = `alert-stage-${stage.replace(/\s+/g, '-')}`;
+        const label = document.createElement('label');
+        label.style.display = 'block';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = id;
+        checkbox.value = stage;
+        checkbox.checked = selectedStages.includes(stage);
+        checkbox.addEventListener('change', () => {
+            const checkedStages = Array.from(alertStagesContainer.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+            chrome.storage.sync.set({ alertStages: checkedStages });
+        });
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(' ' + stage));
+        alertStagesContainer.appendChild(label);
+    });
+}
+document.addEventListener('DOMContentLoaded', () => {
+    loadAlertSettings();
+
+    // Save Audio URLs
+    saveAudioUrlsButton.addEventListener('click', () => {
+        const audioUrls = {};
+        const inputs = audioUrlsContainer.querySelectorAll('input[type="text"]');
+        inputs.forEach(input => {
+            const stage = input.id.replace('audio-url-', '').replace(/-/g, ' ');
+            audioUrls[stage] = input.value.trim();
+        });
+        chrome.storage.sync.set({ alertAudioUrls: audioUrls }, () => {
+            log('Alert audio URLs saved:', 2, audioUrls);
+        });
+        const statusMessage = document.getElementById('audio-urls-status-message');
+        statusMessage.textContent = 'Audio URLs saved.';
+        setTimeout(() => {
+            statusMessage.textContent = '';
+        }, 2000);
+    });
+});
+alertsEnabledCheckbox.addEventListener('change', () => {
+    const alertsEnabled = alertsEnabledCheckbox.checked;
+    chrome.storage.sync.set({ alertsEnabled }, () => {
+        log('Alerts enabled state saved:', 2, alertsEnabled);
+    });
+});
+function renderAudioUrls(stages, audioUrls) {
+    const preSavedSounds = [
+        { title: "3 Tone ding", url: "https://codeskulptor-demos.commondatastorage.googleapis.com/descent/gotitem.mp3" },
+        { title: "Discord Ping", url: "https://www.myinstants.com/media/sounds/y2mate_rQlfs1Y.mp3" },
+        { title: "Metal Pipe Clang", url: "https://www.myinstants.com/media/sounds/metal-pipe-clang.mp3" },
+        { title: "Jet2Holiday", url: "https://www.myinstants.com/media/sounds/nothing-beats-a-jet2-holiday_IeBO1Mr.mp3" },
+        { title: "McDonalds POV", url: "https://www.youtube-nocookie.com/embed/hJY5jgO6HAc?autoplay=1&mute=0" },
+        { title: "YIPEEE", url: "https://www.myinstants.com/media/sounds/yippeeeeeeeeeeeeee.mp3" },
+        { title: "Custom", url: "" } // Custom option
+    ];
+
+    audioUrlsContainer.innerHTML = '';
+    stages.forEach(stage => {
+        const id = `audio-url-${stage.replace(/\s+/g, '-')}`;
+        const container = document.createElement('div');
+        container.className = 'audio-url-container';
+
+        const label = document.createElement('label');
+        label.textContent = stage;
+        label.className = 'audio-url-label';
+
+        const dropdown = document.createElement('select');
+        dropdown.className = 'audio-url-dropdown';
+        dropdown.id = `${id}-dropdown`;
+
+        preSavedSounds.forEach(sound => {
+            const option = document.createElement('option');
+            option.value = sound.url;
+            option.textContent = sound.title;
+            dropdown.appendChild(option);
+        });
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = id;
+        input.value = audioUrls[stage] || '';
+        input.placeholder = `Enter audio URL for ${stage}`;
+        input.className = 'audio-url-input';
+        input.style.display = 'none'; // Hidden by default
+
+        dropdown.addEventListener('change', () => {
+            if (dropdown.value === "") {
+                input.style.display = 'block'; // Show input for "Custom"
+            } else {
+                input.style.display = 'none'; // Hide input for pre-saved sounds
+                input.value = dropdown.value; // Set input value to selected sound URL
+            }
+        });
+
+        const buttonRow = document.createElement('div');
+        buttonRow.className = 'audio-url-buttons';
+
+        const playIcon = document.createElement('span');
+        playIcon.innerHTML = '▶'; // Play icon (▶)
+        playIcon.className = 'icon play-icon';
+        playIcon.title = 'Play';
+        playIcon.addEventListener('click', () => {
+            const audioUrl = input.value.trim();
+            if (audioUrl) {
+                const iframe = document.createElement('iframe');
+                iframe.src = audioUrl;
+                iframe.allow = 'autoplay';
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+                testAudioIframes[stage] = iframe;
+            } else {
+                alert('Please enter a valid audio URL.');
+            }
+        });
+
+        const pauseIcon = document.createElement('span');
+        pauseIcon.innerHTML = '&#10074;&#10074;'; // Pause icon (||)
+        pauseIcon.className = 'icon pause-icon';
+        pauseIcon.title = 'Pause';
+        pauseIcon.addEventListener('click', () => {
+            if (testAudioIframes[stage]) {
+                testAudioIframes[stage].remove();
+                delete testAudioIframes[stage];
+            }
+        });
+
+        buttonRow.appendChild(playIcon);
+        buttonRow.appendChild(pauseIcon);
+
+        container.appendChild(label);
+        container.appendChild(dropdown);
+        container.appendChild(input);
+        container.appendChild(buttonRow);
+
+        audioUrlsContainer.appendChild(container);
+    });
+}
 // --- Event Listeners ---
+// Save audio URLs
+saveAudioUrlsButton.addEventListener('click', () => {
+    const audioUrls = {};
+    const inputs = audioUrlsContainer.querySelectorAll('input[type="text"]');
+    inputs.forEach(input => {
+        const stage = input.id.replace('audio-url-', '').replace(/-/g, ' ');
+        audioUrls[stage] = input.value.trim();
+    });
+    chrome.storage.sync.set({ alertAudioUrls: audioUrls }, () => {
+        log('Alert audio URLs saved:', 2, audioUrls);
+    });
+    const statusMessage = document.getElementById('audio-urls-status-message');
+    statusMessage.textContent = 'Audio URLs saved.';
+    setTimeout(() => {
+        statusMessage.textContent = '';
+    }, 2000);
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     loadPopupValues();
     loadHighlightColumns();
