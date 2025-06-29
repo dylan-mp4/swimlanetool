@@ -149,63 +149,6 @@ function renderAlertStages(stages, selectedStages) {
         alertStagesContainer.appendChild(label);
     });
 }
-function renderAudioUrls(stages, audioUrls) {
-    audioUrlsContainer.innerHTML = '';
-    stages.forEach(stage => {
-        const id = `audio-url-${stage.replace(/\s+/g, '-')}`;
-        const container = document.createElement('div');
-        container.className = 'audio-url-container';
-
-        const label = document.createElement('label');
-        label.textContent = `${stage}: `;
-        label.className = 'audio-url-label';
-
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.id = id;
-        input.value = audioUrls[stage] || '';
-        input.placeholder = `Enter audio URL for ${stage}`;
-        input.className = 'audio-url-input';
-
-        const playIcon = document.createElement('span');
-        playIcon.innerHTML = '&#9658;'; // Play icon (▶)
-        playIcon.className = 'icon play-icon';
-        playIcon.title = 'Play';
-        playIcon.addEventListener('click', () => {
-            const audioUrl = input.value.trim();
-            if (audioUrl) {
-                if (testAudioIframes[stage]) {
-                    testAudioIframes[stage].remove();
-                }
-                const iframe = document.createElement('iframe');
-                iframe.src = audioUrl;
-                iframe.allow = 'autoplay';
-                iframe.style.display = 'none';
-                document.body.appendChild(iframe);
-                testAudioIframes[stage] = iframe;
-            } else {
-                alert('Please enter a valid audio URL.');
-            }
-        });
-
-        const pauseIcon = document.createElement('span');
-        pauseIcon.innerHTML = '&#10074;&#10074;'; // Pause icon (||)
-        pauseIcon.className = 'icon pause-icon';
-        pauseIcon.title = 'Pause';
-        pauseIcon.addEventListener('click', () => {
-            if (testAudioIframes[stage]) {
-                testAudioIframes[stage].remove();
-                delete testAudioIframes[stage];
-            }
-        });
-
-        container.appendChild(label);
-        container.appendChild(input);
-        container.appendChild(playIcon);
-        container.appendChild(pauseIcon);
-        audioUrlsContainer.appendChild(container);
-    });
-}
 document.addEventListener('DOMContentLoaded', () => {
     loadAlertSettings();
 
