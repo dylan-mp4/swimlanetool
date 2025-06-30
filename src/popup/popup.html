@@ -36,7 +36,50 @@
                 <button id="select-all-columns" type="button">Select All</button>
                 <button id="deselect-all-columns" type="button">Deselect All</button>
             </div>
+            <h2>Set SLA Color Profiles</h2>
+            <div class="sla-color-profile" data-stage="Assessment">
+                <button class="collapse-btn" type="button" aria-expanded="false">▶ Assessment</button>
+                <div class="sla-color-row collapse-content" style="display:none;">
+                    <label>60 Mins: <input type="color" class="sla-color-picker" data-stage="Assessment" data-color="0"
+                            value="#00ff00"></label>
+                    <label>30 Mins: <input type="color" class="sla-color-picker" data-stage="Assessment" data-color="1"
+                            value="#f0a500"></label>
+                    <label>0 Mins: <input type="color" class="sla-color-picker" data-stage="Assessment" data-color="2"
+                            value="#e60000"></label>
+                </div>
+            </div>
+            <div class="sla-color-profile" data-stage="Awaiting Analyst">
+                <button class="collapse-btn" type="button" aria-expanded="false">▶ Awaiting Analyst</button>
+                <div class="sla-color-row collapse-content" style="display:none;">
+                    <label>15 Mins: <input type="color" class="sla-color-picker" data-stage="Awaiting Analyst"
+                            data-color="0" value="#00ff00"></label>
+                    <label>5 Mins: <input type="color" class="sla-color-picker" data-stage="Awaiting Analyst"
+                            data-color="1" value="#f0a500"></label>
+                    <label>0 Mins: <input type="color" class="sla-color-picker" data-stage="Awaiting Analyst"
+                            data-color="2" value="#e60000"></label>
+                </div>
+            </div>
+            <div class="sla-color-profile" data-stage="Analyst Follow Up">
+                <button class="collapse-btn" type="button" aria-expanded="false">▶ Analyst Follow Up</button>
+                <div class="sla-color-row collapse-content" style="display:none;">
+                    <label>Color: <input type="color" class="sla-static-color-picker" data-stage="Analyst Follow Up"
+                            value="#0acdF0"></label>
+                </div>
+            </div>
+            <div class="sla-color-profile" data-stage="Response Received">
+                <button class="collapse-btn" type="button" aria-expanded="false">▶ Response Received</button>
+                <div class="sla-color-row collapse-content" style="display:none;">
+                    <label>Color: <input type="color" class="sla-static-color-picker" data-stage="Response Received"
+                            value="#9334ff"></label>
+                </div>
+            </div>
+            <div>
+                <div><span class="status-msg" id="sla-colors-status-message"></span></div>
+                <button class="save-btn" id="save-sla-colors">Save SLA Colors</button>
+            </div>
+
         </div>
+        <!-- AUTO REFRESH -->
         <div class="tab-content" id="tab-refresh">
             <h1>Auto Refresh</h1>
             <label><input type="checkbox" id="auto-refresh-checkbox" /> Enable Auto Refresh</label>

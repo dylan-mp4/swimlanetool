@@ -24,7 +24,7 @@ const audioUrlsContainer = document.getElementById('audio-urls-container');
 const saveAudioUrlsButton = document.getElementById('save-audio-urls');
 const testAudioAlertButton = document.getElementById('test-audio-alert');
 const stopAudioAlertButton = document.getElementById('stop-audio-alert');
-
+document.getElementById('save-sla-colors').addEventListener('click', saveSlaColorProfiles);
 // --- Utility ---
 var debugLogLevel = 0;
 const testAudioIframes = {};
@@ -33,6 +33,17 @@ function log(message, level = 3, ...args) {
     if (debugLogLevel >= level) {
         console.log(`SLTool: ${message}`, ...args);
     }
+}
+
+function hexToRgb(hex) {
+    hex = hex.replace(/^#/, '');
+    if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');
+    const num = parseInt(hex, 16);
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+}
+
+function rgbToHex({ r, g, b }) {
+    return "#" + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
 // --- Loaders ---
@@ -155,13 +166,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Save Audio URLs
     saveAudioUrlsButton.addEventListener('click', () => {
         const audioUrls = {};
-        const inputs = audioUrlsContainer.querySelectorAll('input[type="text"]');
-        inputs.forEach(input => {
+        const audioDropdownSelections = {};
+        const containers = audioUrlsContainer.querySelectorAll('.audio-url-container');
+        containers.forEach(container => {
+            const input = container.querySelector('input[type="text"]');
+            const dropdown = container.querySelector('select');
             const stage = input.id.replace('audio-url-', '').replace(/-/g, ' ');
             audioUrls[stage] = input.value.trim();
+            audioDropdownSelections[stage] = dropdown.value;
         });
-        chrome.storage.sync.set({ alertAudioUrls: audioUrls }, () => {
-            log('Alert audio URLs saved:', 2, audioUrls);
+        chrome.storage.sync.set({
+            alertAudioUrls: audioUrls,
+            alertAudioDropdownSelections: audioDropdownSelections
+        }, () => {
+            log('Alert audio URLs and dropdown selections saved:', 2, audioUrls, audioDropdownSelections);
         });
         const statusMessage = document.getElementById('audio-urls-status-message');
         statusMessage.textContent = 'Audio URLs saved.';
@@ -177,95 +195,181 @@ alertsEnabledCheckbox.addEventListener('change', () => {
     });
 });
 function renderAudioUrls(stages, audioUrls) {
-    const preSavedSounds = [
-        { title: "3 Tone ding", url: "https://codeskulptor-demos.commondatastorage.googleapis.com/descent/gotitem.mp3" },
-        { title: "Discord Ping", url: "https://www.myinstants.com/media/sounds/y2mate_rQlfs1Y.mp3" },
-        { title: "Metal Pipe Clang", url: "https://www.myinstants.com/media/sounds/metal-pipe-clang.mp3" },
-        { title: "Jet2Holiday", url: "https://www.myinstants.com/media/sounds/nothing-beats-a-jet2-holiday_IeBO1Mr.mp3" },
-        { title: "McDonalds POV", url: "https://www.youtube-nocookie.com/embed/hJY5jgO6HAc?autoplay=1&mute=0" },
-        { title: "YIPEEE", url: "https://www.myinstants.com/media/sounds/yippeeeeeeeeeeeeee.mp3" },
-        { title: "Custom", url: "" } // Custom option
-    ];
+    chrome.storage.sync.get(['alertAudioDropdownSelections'], (data) => {
+        const preSavedSounds = [
+            { title: "3 Tone ding", url: "https://codeskulptor-demos.commondatastorage.googleapis.com/descent/gotitem.mp3" },
+            { title: "Discord Ping", url: "https://www.myinstants.com/media/sounds/y2mate_rQlfs1Y.mp3" },
+            { title: "Metal Pipe Clang", url: "https://www.myinstants.com/media/sounds/metal-pipe-clang.mp3" },
+            { title: "Jet2Holiday", url: "https://www.myinstants.com/media/sounds/nothing-beats-a-jet2-holiday_IeBO1Mr.mp3" },
+            { title: "McDonalds POV", url: "https://www.youtube-nocookie.com/embed/hJY5jgO6HAc?autoplay=1&mute=0" },
+            { title: "YIPEEE", url: "https://www.myinstants.com/media/sounds/yippeeeeeeeeeeeeee.mp3" },
+            { title: "Spiderman", url: "https://www.youtube-nocookie.com/embed/rFK-IJJRT_o?autoplay=1&mute=0" },
+            { title: "Custom", url: "" } // Custom option
+        ];
 
-    audioUrlsContainer.innerHTML = '';
-    stages.forEach(stage => {
-        const id = `audio-url-${stage.replace(/\s+/g, '-')}`;
-        const container = document.createElement('div');
-        container.className = 'audio-url-container';
+        const dropdownSelections = data.alertAudioDropdownSelections || {};
 
-        const label = document.createElement('label');
-        label.textContent = stage;
-        label.className = 'audio-url-label';
+        audioUrlsContainer.innerHTML = '';
+        stages.forEach(stage => {
+            const id = `audio-url-${stage.replace(/\s+/g, '-')}`;
+            const container = document.createElement('div');
+            container.className = 'audio-url-container';
 
-        const dropdown = document.createElement('select');
-        dropdown.className = 'audio-url-dropdown';
-        dropdown.id = `${id}-dropdown`;
+            const label = document.createElement('label');
+            label.textContent = stage;
+            label.className = 'audio-url-label';
 
-        preSavedSounds.forEach(sound => {
-            const option = document.createElement('option');
-            option.value = sound.url;
-            option.textContent = sound.title;
-            dropdown.appendChild(option);
-        });
+            const dropdown = document.createElement('select');
+            dropdown.className = 'audio-url-dropdown';
+            dropdown.id = `${id}-dropdown`;
 
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.id = id;
-        input.value = audioUrls[stage] || '';
-        input.placeholder = `Enter audio URL for ${stage}`;
-        input.className = 'audio-url-input';
-        input.style.display = 'none'; // Hidden by default
+            preSavedSounds.forEach(sound => {
+                const option = document.createElement('option');
+                option.value = sound.url;
+                option.textContent = sound.title;
+                dropdown.appendChild(option);
+            });
 
-        dropdown.addEventListener('change', () => {
-            if (dropdown.value === "") {
-                input.style.display = 'block'; // Show input for "Custom"
+            // Restore dropdown selection if available
+            let selectedDropdownValue = dropdownSelections[stage] !== undefined ? dropdownSelections[stage] : (audioUrls[stage] || "");
+            dropdown.value = selectedDropdownValue;
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = id;
+            input.value = audioUrls[stage] || '';
+            input.placeholder = `Enter audio URL for ${stage}`;
+            input.className = 'audio-url-input';
+
+            // Show input if "Custom" or not matching any pre-saved
+            if (!preSavedSounds.some(s => s.url === selectedDropdownValue) || selectedDropdownValue === "") {
+                input.style.display = 'block';
+                dropdown.value = "";
             } else {
-                input.style.display = 'none'; // Hide input for pre-saved sounds
-                input.value = dropdown.value; // Set input value to selected sound URL
+                input.style.display = 'none';
+                input.value = selectedDropdownValue;
+            }
+
+            dropdown.addEventListener('change', () => {
+                if (dropdown.value === "") {
+                    input.style.display = 'block';
+                } else {
+                    input.style.display = 'none';
+                    input.value = dropdown.value;
+                }
+            });
+
+            // ...existing play/pause icon code...
+
+            const buttonRow = document.createElement('div');
+            buttonRow.className = 'audio-url-buttons';
+
+            const playIcon = document.createElement('span');
+            playIcon.innerHTML = '▶';
+            playIcon.className = 'icon play-icon';
+            playIcon.title = 'Play';
+            playIcon.addEventListener('click', () => {
+                const audioUrl = input.value.trim();
+                if (audioUrl) {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = audioUrl;
+                    iframe.allow = 'autoplay';
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                    testAudioIframes[stage] = iframe;
+                } else {
+                    alert('Please enter a valid audio URL.');
+                }
+            });
+
+            const pauseIcon = document.createElement('span');
+            pauseIcon.innerHTML = '&#10074;&#10074;';
+            pauseIcon.className = 'icon pause-icon';
+            pauseIcon.title = 'Pause';
+            pauseIcon.addEventListener('click', () => {
+                if (testAudioIframes[stage]) {
+                    testAudioIframes[stage].remove();
+                    delete testAudioIframes[stage];
+                }
+            });
+
+            buttonRow.appendChild(playIcon);
+            buttonRow.appendChild(pauseIcon);
+
+            container.appendChild(label);
+            container.appendChild(dropdown);
+            container.appendChild(input);
+            container.appendChild(buttonRow);
+
+            audioUrlsContainer.appendChild(container);
+        });
+    });
+}
+function loadSlaColorProfiles() {
+    chrome.storage.sync.get(['slaColorProfiles'], (data) => {
+        const profiles = data.slaColorProfiles || {};
+        document.querySelectorAll('.sla-color-profile').forEach(profileDiv => {
+            const stage = profileDiv.dataset.stage;
+            const profile = profiles[stage];
+            if (profile) {
+                // Gradient stages
+                if (profile.colors) {
+                    profileDiv.querySelectorAll('.sla-color-picker').forEach(input => {
+                        const idx = input.dataset.color;
+                        if (profile.colors[idx]) {
+                            input.value = rgbToHex(profile.colors[idx]);
+                        }
+                    });
+                }
+                // Static color stages
+                if (profile.color) {
+                    const staticInput = profileDiv.querySelector('.sla-static-color-picker');
+                    if (staticInput) staticInput.value = rgbToHex(profile.color);
+                }
+                // Alpha
+                const alphaInput = profileDiv.querySelector('.sla-alpha, .sla-static-alpha');
+                if (alphaInput && profile.alpha !== undefined) {
+                    alphaInput.value = profile.alpha;
+                }
             }
         });
+    });
+}
 
-        const buttonRow = document.createElement('div');
-        buttonRow.className = 'audio-url-buttons';
-
-        const playIcon = document.createElement('span');
-        playIcon.innerHTML = '▶'; // Play icon (▶)
-        playIcon.className = 'icon play-icon';
-        playIcon.title = 'Play';
-        playIcon.addEventListener('click', () => {
-            const audioUrl = input.value.trim();
-            if (audioUrl) {
-                const iframe = document.createElement('iframe');
-                iframe.src = audioUrl;
-                iframe.allow = 'autoplay';
-                iframe.style.display = 'none';
-                document.body.appendChild(iframe);
-                testAudioIframes[stage] = iframe;
-            } else {
-                alert('Please enter a valid audio URL.');
-            }
+// --- Save to storage ---
+function saveSlaColorProfiles() {
+    const profiles = {};
+    document.querySelectorAll('.sla-color-profile').forEach(profileDiv => {
+        const stage = profileDiv.dataset.stage;
+        // Gradient stages
+        const colorPickers = profileDiv.querySelectorAll('.sla-color-picker');
+        if (colorPickers.length) {
+            const colors = [];
+            colorPickers.forEach(input => {
+                const idx = input.dataset.color;
+                colors[idx] = hexToRgb(input.value);
+            });
+            // Set static thresholds for gradient stages
+            let thresholds = [];
+            if (stage === "Assessment") thresholds = [0, 30, 55];
+            else if (stage === "Awaiting Analyst") thresholds = [0, 5, 12];
+            profiles[stage] = { thresholds, colors, alpha: 0.33 };
+        }
+        // Static color stages
+        const staticColor = profileDiv.querySelector('.sla-static-color-picker');
+        if (staticColor) {
+            const color = hexToRgb(staticColor.value);
+            profiles[stage] = { color, alpha: 0.33 };
+        }
+    });
+    chrome.storage.sync.set({ slaColorProfiles: profiles }, () => {
+        document.getElementById('sla-colors-status-message').textContent = 'SLA color profiles saved!';
+        setTimeout(() => {
+            document.getElementById('sla-colors-status-message').textContent = '';
+        }, 2000);
+        chrome.tabs && chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]) chrome.tabs.sendMessage(tabs[0].id, { action: 'updateSlaColorProfiles', slaColorProfiles: profiles });
         });
-
-        const pauseIcon = document.createElement('span');
-        pauseIcon.innerHTML = '&#10074;&#10074;'; // Pause icon (||)
-        pauseIcon.className = 'icon pause-icon';
-        pauseIcon.title = 'Pause';
-        pauseIcon.addEventListener('click', () => {
-            if (testAudioIframes[stage]) {
-                testAudioIframes[stage].remove();
-                delete testAudioIframes[stage];
-            }
-        });
-
-        buttonRow.appendChild(playIcon);
-        buttonRow.appendChild(pauseIcon);
-
-        container.appendChild(label);
-        container.appendChild(dropdown);
-        container.appendChild(input);
-        container.appendChild(buttonRow);
-
-        audioUrlsContainer.appendChild(container);
     });
 }
 // --- Event Listeners ---
@@ -290,6 +394,7 @@ saveAudioUrlsButton.addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', () => {
     loadPopupValues();
     loadHighlightColumns();
+    loadSlaColorProfiles();
 
     // Tab switching logic
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -334,7 +439,16 @@ document.addEventListener('DOMContentLoaded', () => {
             chrome.storage.sync.set({ highlightColumns: [] });
         });
     }
-
+    // Collapse logic for SLA color profiles
+    document.querySelectorAll('.collapse-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const content = this.parentElement.querySelector('.collapse-content');
+            const expanded = this.getAttribute('aria-expanded') === 'true';
+            this.setAttribute('aria-expanded', !expanded);
+            this.textContent = (expanded ? '▶ ' : '▼ ') + this.textContent.replace(/^. /, '').replace(/^▶ |^▼ /, '');
+            content.style.display = expanded ? 'none' : 'flex';
+        });
+    });
     // Version number
     const versionSpan = document.getElementById('version-number');
     if (versionSpan && chrome.runtime && chrome.runtime.getManifest) {

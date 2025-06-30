@@ -19,6 +19,43 @@ let disableSeverityHighlighting = false;
 var debugMode = false;
 var debugLogLevel = 0;
 
+// --- SLA Colour Profiles (Customizable) ---
+const slaColorProfiles = {
+    "Assessment": {
+        thresholds: [0, 30, 55],
+        colors: [
+            { r: 0, g: 255, b: 0 },      // Green
+            { r: 240, g: 165, b: 0 },    // Orange
+            { r: 230, g: 0, b: 0 }       // Red
+        ],
+        alpha: 0.33
+    },
+    "Awaiting Analyst": {
+        thresholds: [0, 5, 12],
+        colors: [
+            { r: 0, g: 255, b: 0 },      // Green
+            { r: 240, g: 165, b: 0 },    // Orange
+            { r: 230, g: 0, b: 0 }       // Red
+        ],
+        alpha: 0.33
+    },
+    "Analyst Follow Up": {
+        color: { r: 10, g: 205, b: 240 },
+        alpha: 0.33
+    },
+    "Response Received": {
+        color: { r: 147, g: 52, b: 255 },
+        alpha: 0.33
+    }
+};
+chrome.storage.sync.get(['slaColorProfiles'], (data) => {
+    if (data.slaColorProfiles) {
+        // Overwrite the default profiles with the stored ones
+        Object.keys(data.slaColorProfiles).forEach(stage => {
+            slaColorProfiles[stage] = data.slaColorProfiles[stage];
+        });
+    }
+});
 // --- Logging ---
 function log(message, level = 3, ...args) {
     if (debugMode && debugLogLevel >= level) {
@@ -101,6 +138,7 @@ function updateAllRows() {
     const rows = getRowElements();
     rows.forEach((row, idx) => {
         updateRowColors(row, idx);
+        // Only color severity if enabled
         if (!disableSeverityHighlighting) {
             colorSeverityColumn(row);
         } else {
@@ -132,9 +170,11 @@ function updateRowColors(rowElem, rowIndex) {
         timeElapsedInMinutes = calculateTimeElapsedForRow(rowElem, "Awaiting Analyst Timestamp");
         gradientColor = calculateGradientColor(caseStage, timeElapsedInMinutes);
     } else if (caseStage === "Analyst Follow Up") {
-        gradientColor = "rgb(10, 205, 240, 0.33)";
+        const profile = slaColorProfiles["Analyst Follow Up"];
+        gradientColor = `rgb(${profile.color.r}, ${profile.color.g}, ${profile.color.b}, ${profile.alpha})`;
     } else if (caseStage === "Response Received") {
-        gradientColor = "rgb(147, 52, 255, 0.33)";
+        const profile = slaColorProfiles["Response Received"];
+        gradientColor = `rgb(${profile.color.r}, ${profile.color.g}, ${profile.color.b}, ${profile.alpha})`;
     } else {
         return true;
     }
@@ -168,37 +208,31 @@ function calculateTimeElapsed(timestampText) {
 }
 
 function calculateGradientColor(caseStage, timeElapsedInMinutes) {
-    let thresholds, colors;
-    if (caseStage === "Assessment") {
-        thresholds = [0, 30, 55];
-    } else if (caseStage === "Awaiting Analyst") {
-        thresholds = [0, 5, 12];
-    } else {
-        return "rgb(255, 255, 255, 0)";
-    }
-    colors = [
-        { r: 0, g: 255, b: 0 },
-        { r: 240, g: 165, b: 0 },
-        { r: 230, g: 0, b: 0 }
-    ];
+    const profile = slaColorProfiles[caseStage];
+    if (!profile || !profile.thresholds || !profile.colors) return "rgb(255, 255, 255, 0)";
+    const thresholds = profile.thresholds;
+    const colors = profile.colors;
+    const alpha = profile.alpha ?? 0.33;
+
     if (timeElapsedInMinutes <= thresholds[0]) {
-        return `rgb(${colors[0].r}, ${colors[0].g}, ${colors[0].b}, 0.33)`;
+        return `rgb(${colors[0].r}, ${colors[0].g}, ${colors[0].b}, ${alpha})`;
     } else if (timeElapsedInMinutes <= thresholds[1]) {
         const ratio = (timeElapsedInMinutes - thresholds[0]) / (thresholds[1] - thresholds[0]);
-        return interpolateColor(colors[0], colors[1], ratio);
+        return interpolateColor(colors[0], colors[1], ratio, alpha);
     } else if (timeElapsedInMinutes <= thresholds[2]) {
         const ratio = (timeElapsedInMinutes - thresholds[1]) / (thresholds[2] - thresholds[1]);
-        return interpolateColor(colors[1], colors[2], ratio);
+        return interpolateColor(colors[1], colors[2], ratio, alpha);
     } else {
-        return `rgb(${colors[2].r}, ${colors[2].g}, ${colors[2].b}, 0.33)`;
+        return `rgb(${colors[2].r}, ${colors[2].g}, ${colors[2].b}, ${alpha})`;
     }
 }
 
-function interpolateColor(color1, color2, ratio) {
+
+function interpolateColor(color1, color2, ratio, alpha = 0.33) {
     const r = Math.round(color1.r + (color2.r - color1.r) * ratio);
     const g = Math.round(color1.g + (color2.g - color1.g) * ratio);
     const b = Math.round(color1.b + (color2.b - color1.b) * ratio);
-    return `rgb(${r}, ${g}, ${b}, 0.33)`;
+    return `rgb(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function applyGradientColor(rowElem, gradientColor, caseStage, timeDifferenceInMinutes) {
@@ -208,10 +242,12 @@ function applyGradientColor(rowElem, gradientColor, caseStage, timeDifferenceInM
         if (!highlightColumns.length) {
             highlightColumns = Object.keys(headerIndexMap);
         }
+        // Always exclude Severity from highlightColumns for SLA coloring
+        highlightColumns = highlightColumns.filter(headerName => headerName !== "Severity");
+
         if (caseStage === "Awaiting Analyst" && timeDifferenceInMinutes > 12) {
             if (!disableFlashing) {
                 highlightColumns.forEach(headerName => {
-                    if (headerName === "Severity") return;
                     const cell = getCellByHeader(rowElem, headerName);
                     if (cell) {
                         applyStyles(cell, { "background-color": "rgba(230,0,0,1)", "background-image": "none" });
@@ -223,7 +259,6 @@ function applyGradientColor(rowElem, gradientColor, caseStage, timeDifferenceInM
                 return;
             } else {
                 highlightColumns.forEach(headerName => {
-                    if (headerName === "Severity") return;
                     const cell = getCellByHeader(rowElem, headerName);
                     if (cell) {
                         applyStyles(cell, { "background-color": gradientColor, "background-image": "none" });
@@ -300,6 +335,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
         });
     }
+    else if (request.action === "updateSlaColorProfiles" && request.slaColorProfiles) {
+        Object.keys(request.slaColorProfiles).forEach(stage => {
+            slaColorProfiles[stage] = request.slaColorProfiles[stage];
+        });
+        updateAllRows();
+    }
 });
 
 function waitForCasesToLoad() {
@@ -345,5 +386,11 @@ chrome.storage.onChanged.addListener((changes) => {
     if (changes.debugLogLevel) {
         debugLogLevel = parseInt(changes.debugLogLevel.newValue, 10);
         log('Debug log level changed:', 2, debugLogLevel);
+    }
+    if (changes.slaColorProfiles && changes.slaColorProfiles.newValue) {
+        Object.keys(changes.slaColorProfiles.newValue).forEach(stage => {
+            slaColorProfiles[stage] = changes.slaColorProfiles.newValue[stage];
+        });
+        updateAllRows();
     }
 });
