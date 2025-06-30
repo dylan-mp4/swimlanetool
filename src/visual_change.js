@@ -175,7 +175,7 @@ function hideEmptyAwareness() {
             const output = el.querySelector('output');
             if (!output) {
                 el.style.display = 'none';
-                console.log(`Hiding element at XPath: ${xpath} (no <output> found)`);
+                // console.log(`Hiding element at XPath: ${xpath} (no <output> found)`);
             } else {
                 let onlyEmptyOrComments = true;
                 let outputText = '';
@@ -195,16 +195,16 @@ function hideEmptyAwareness() {
                 }
                 if (onlyEmptyOrComments) {
                     el.style.display = 'none';
-                    console.log(`Hiding element at XPath: ${xpath} (<output> is empty or only comments)`);
+                    // console.log(`Hiding element at XPath: ${xpath} (<output> is empty or only comments)`);
                 } else if (
                     outputText === 'No Exceptional Situations currently' ||
                     outputText === 'No Internal Exceptional Situations currently'
                 ) {
                     el.style.display = 'none';
-                    console.log(`Hiding element at XPath: ${xpath} (outputText: "${outputText}")`);
+                    // console.log(`Hiding element at XPath: ${xpath} (outputText: "${outputText}")`);
                 } else {
                     el.style.display = '';
-                    console.log(`Keeping element at XPath: ${xpath} (<output> has content)`);
+                    // console.log(`Keeping element at XPath: ${xpath} (<output> has content)`);
                 }
             }
         }
