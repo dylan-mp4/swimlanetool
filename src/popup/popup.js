@@ -24,7 +24,7 @@ const audioUrlsContainer = document.getElementById('audio-urls-container');
 const saveAudioUrlsButton = document.getElementById('save-audio-urls');
 const testAudioAlertButton = document.getElementById('test-audio-alert');
 const stopAudioAlertButton = document.getElementById('stop-audio-alert');
-
+document.getElementById('save-sla-colors').addEventListener('click', saveSlaColorProfiles);
 // --- Utility ---
 var debugLogLevel = 0;
 const testAudioIframes = {};
@@ -33,6 +33,17 @@ function log(message, level = 3, ...args) {
     if (debugLogLevel >= level) {
         console.log(`SLTool: ${message}`, ...args);
     }
+}
+
+function hexToRgb(hex) {
+    hex = hex.replace(/^#/, '');
+    if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');
+    const num = parseInt(hex, 16);
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+}
+
+function rgbToHex({ r, g, b }) {
+    return "#" + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
 // --- Loaders ---
@@ -192,6 +203,7 @@ function renderAudioUrls(stages, audioUrls) {
             { title: "Jet2Holiday", url: "https://www.myinstants.com/media/sounds/nothing-beats-a-jet2-holiday_IeBO1Mr.mp3" },
             { title: "McDonalds POV", url: "https://www.youtube-nocookie.com/embed/hJY5jgO6HAc?autoplay=1&mute=0" },
             { title: "YIPEEE", url: "https://www.myinstants.com/media/sounds/yippeeeeeeeeeeeeee.mp3" },
+            { title: "Spiderman", url: "https://www.youtube-nocookie.com/embed/rFK-IJJRT_o?autoplay=1&mute=0" },
             { title: "Custom", url: "" } // Custom option
         ];
 
@@ -293,6 +305,73 @@ function renderAudioUrls(stages, audioUrls) {
         });
     });
 }
+function loadSlaColorProfiles() {
+    chrome.storage.sync.get(['slaColorProfiles'], (data) => {
+        const profiles = data.slaColorProfiles || {};
+        document.querySelectorAll('.sla-color-profile').forEach(profileDiv => {
+            const stage = profileDiv.dataset.stage;
+            const profile = profiles[stage];
+            if (profile) {
+                // Gradient stages
+                if (profile.colors) {
+                    profileDiv.querySelectorAll('.sla-color-picker').forEach(input => {
+                        const idx = input.dataset.color;
+                        if (profile.colors[idx]) {
+                            input.value = rgbToHex(profile.colors[idx]);
+                        }
+                    });
+                }
+                // Static color stages
+                if (profile.color) {
+                    const staticInput = profileDiv.querySelector('.sla-static-color-picker');
+                    if (staticInput) staticInput.value = rgbToHex(profile.color);
+                }
+                // Alpha
+                const alphaInput = profileDiv.querySelector('.sla-alpha, .sla-static-alpha');
+                if (alphaInput && profile.alpha !== undefined) {
+                    alphaInput.value = profile.alpha;
+                }
+            }
+        });
+    });
+}
+
+// --- Save to storage ---
+function saveSlaColorProfiles() {
+    const profiles = {};
+    document.querySelectorAll('.sla-color-profile').forEach(profileDiv => {
+        const stage = profileDiv.dataset.stage;
+        // Gradient stages
+        const colorPickers = profileDiv.querySelectorAll('.sla-color-picker');
+        if (colorPickers.length) {
+            const colors = [];
+            colorPickers.forEach(input => {
+                const idx = input.dataset.color;
+                colors[idx] = hexToRgb(input.value);
+            });
+            // Set static thresholds for gradient stages
+            let thresholds = [];
+            if (stage === "Assessment") thresholds = [0, 30, 55];
+            else if (stage === "Awaiting Analyst") thresholds = [0, 5, 12];
+            profiles[stage] = { thresholds, colors, alpha: 0.33 };
+        }
+        // Static color stages
+        const staticColor = profileDiv.querySelector('.sla-static-color-picker');
+        if (staticColor) {
+            const color = hexToRgb(staticColor.value);
+            profiles[stage] = { color, alpha: 0.33 };
+        }
+    });
+    chrome.storage.sync.set({ slaColorProfiles: profiles }, () => {
+        document.getElementById('sla-colors-status-message').textContent = 'SLA color profiles saved!';
+        setTimeout(() => {
+            document.getElementById('sla-colors-status-message').textContent = '';
+        }, 2000);
+        chrome.tabs && chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]) chrome.tabs.sendMessage(tabs[0].id, { action: 'updateSlaColorProfiles', slaColorProfiles: profiles });
+        });
+    });
+}
 // --- Event Listeners ---
 // Save audio URLs
 saveAudioUrlsButton.addEventListener('click', () => {
@@ -315,6 +394,7 @@ saveAudioUrlsButton.addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', () => {
     loadPopupValues();
     loadHighlightColumns();
+    loadSlaColorProfiles();
 
     // Tab switching logic
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -359,7 +439,16 @@ document.addEventListener('DOMContentLoaded', () => {
             chrome.storage.sync.set({ highlightColumns: [] });
         });
     }
-
+    // Collapse logic for SLA color profiles
+    document.querySelectorAll('.collapse-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const content = this.parentElement.querySelector('.collapse-content');
+            const expanded = this.getAttribute('aria-expanded') === 'true';
+            this.setAttribute('aria-expanded', !expanded);
+            this.textContent = (expanded ? '▶ ' : '▼ ') + this.textContent.replace(/^. /, '').replace(/^▶ |^▼ /, '');
+            content.style.display = expanded ? 'none' : 'flex';
+        });
+    });
     // Version number
     const versionSpan = document.getElementById('version-number');
     if (versionSpan && chrome.runtime && chrome.runtime.getManifest) {

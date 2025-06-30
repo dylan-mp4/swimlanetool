@@ -238,7 +238,7 @@ p,
 /* Audio URL Container */
 .audio-url-container {
     display: flex;
-    flex-direction: column; /* Stack label and input row vertically */
+    flex-direction: column;
     margin-bottom: 10px;
     background: #24194a;
     padding: 10px;
@@ -258,12 +258,12 @@ p,
 .audio-url-input-row {
     display: flex;
     align-items: center;
-    gap: 10px; /* Add spacing between input and icons */
+    gap: 10px;
 }
 
 /* Input Fields */
 .audio-url-input {
-    flex: 1; /* Allow input to take up available space */
+    flex: 1;
     padding: 6px;
     border: 1.5px solid #3d2a6d;
     border-radius: 6px;
@@ -271,7 +271,7 @@ p,
     color: #e0d7ff;
     font-size: 14px;
     transition: border 0.2s;
-    width: 70%; /* Ensure input takes full width */
+    width: 70%;
 }
 
 .audio-url-input:focus {
@@ -325,11 +325,11 @@ p,
     border-color: #7c4dff;
     outline: none;
 }
+
 /* Button Row */
 .audio-url-buttons {
     display: flex;
-    gap: 10px; /* Add spacing between buttons */
-    margin-top: 8px; /* Add spacing above the button row */
+    gap: 5px;
 }
 
 /* Play and Pause Icons */
@@ -342,4 +342,98 @@ p,
 
 .icon:hover {
     color: #512da8;
+}
+
+.sla-color-profile {
+    margin-bottom: 18px;
+    background: #2d2157;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.sla-color-profile label {
+    font-size: 13px;
+    color: #d1b3ff;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.save-btn {
+    margin-top: 10px;
+}
+
+.status-msg {
+    color: #b388ff;
+    font-size: 13px;
+    margin-top: 6px;
+}
+
+/* Prettier color pickers */
+input[type="color"].sla-color-picker,
+input[type="color"].sla-static-color-picker {
+    border: 2px solid #7c4dff;
+    border-radius: 6px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: #2d2157;
+    cursor: pointer;
+    transition: border 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 4px rgba(124, 77, 255, 0.10);
+    margin-right: 8px;
+    vertical-align: middle;
+}
+input[type="color"].sla-color-picker:focus,
+input[type="color"].sla-static-color-picker:focus {
+    outline: none;
+    border: 2px solid #b388ff;
+    box-shadow: 0 0 0 2px #b388ff44;
+}
+
+/* Remove default color picker icon in Chrome */
+input[type="color"].sla-color-picker::-webkit-color-swatch-wrapper,
+input[type="color"].sla-static-color-picker::-webkit-color-swatch-wrapper {
+    padding: 0;
+    border-radius: 6px;
+}
+input[type="color"].sla-color-picker::-webkit-color-swatch,
+input[type="color"].sla-static-color-picker::-webkit-color-swatch {
+    border-radius: 6px;
+    border: none;
+}
+
+/* For Firefox */
+input[type="color"].sla-color-picker,
+input[type="color"].sla-static-color-picker {
+    /* Remove inner border in Firefox */
+    border-width: 2px !important;
+}
+.sla-color-row {
+    display: flex;
+    /* gap: 18px; */
+    align-items: center;
+    /* margin-bottom: 8px; */
+    margin-top: 10px;
+}
+.sla-color-row label {
+    margin-bottom: 0;
+    font-size: 13px;
+}
+.collapse-btn {
+    background: none;
+    border: none;
+    color: #b388ff;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0 0 6px 0;
+    margin-bottom: 0;
+    outline: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s;
+}
+.collapse-btn[aria-expanded="true"] {
+    color: #fff;
 }
